@@ -30,6 +30,7 @@ export default defineConfig(({ command, mode }) => {
     },
     server: {
       port: 3000,
+      strictPort: true, // 如果端口被占用，不自动尝试其他端口，直接报错
       host: true,
       proxy: {
         '/api': {
