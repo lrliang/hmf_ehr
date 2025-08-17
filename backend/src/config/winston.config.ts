@@ -2,7 +2,7 @@ import * as winston from 'winston';
 import { WinstonModuleOptions } from 'nest-winston';
 
 const logLevel = process.env.LOG_LEVEL || 'info';
-const maxFiles = process.env.LOG_MAX_FILES || '14d';
+const maxFiles = process.env.LOG_MAX_FILES || '14';
 
 export const winstonConfig: WinstonModuleOptions = {
   level: logLevel,
@@ -35,7 +35,7 @@ export const winstonConfig: WinstonModuleOptions = {
     new winston.transports.File({
       filename: 'logs/combined.log',
       maxsize: 5242880, // 5MB
-      maxFiles: maxFiles,
+      maxFiles: parseInt(maxFiles, 10),
     }),
   ],
 };

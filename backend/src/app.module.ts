@@ -65,7 +65,7 @@ import { SharedModule } from './shared/shared.module';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        store: redisStore,
+        store: redisStore as any,
         host: configService.get('REDIS_HOST', 'localhost'),
         port: configService.get('REDIS_PORT', 6379),
         password: configService.get('REDIS_PASSWORD'),
@@ -77,11 +77,13 @@ import { SharedModule } from './shared/shared.module';
 
     // 限流模块
     ThrottlerModule.forRootAsync({
-      imports: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        ttl: configService.get('throttler.ttl'),
-        limit: configService.get('throttler.limit'),
-      }),
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get('throttler.ttl', 60000),
+          limit: configService.get('throttler.limit', 10),
+        },
+      ],
       inject: [ConfigService],
     }),
 

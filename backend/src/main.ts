@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WinstonModule } from 'nest-winston';
 import * as compression from 'compression';
-import * as helmet from 'helmet';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { winstonConfig } from './config/winston.config';
@@ -27,11 +27,11 @@ async function bootstrap() {
   // 设置全局前缀
   app.setGlobalPrefix(apiPrefix);
 
-  // 启用版本控制
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
+  // 临时禁用版本控制
+  // app.enableVersioning({
+  //   type: VersioningType.URI,
+  //   defaultVersion: '1',
+  // });
 
   // 启用CORS
   app.enableCors({
