@@ -35,9 +35,14 @@ async function bootstrap() {
 
   // 启用CORS
   app.enableCors({
-    origin: corsOrigin,
+    origin: [
+      corsOrigin, // 从环境变量读取
+      'http://localhost:3001', // 前端开发服务器
+      'http://localhost:3000', // 备用端口
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // 安全中间件
