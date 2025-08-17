@@ -1,0 +1,198 @@
+@import '@/styles/variables.scss';
+
+.dashboard-container {
+  padding: $padding-lg;
+
+  .welcome-section {
+    margin-bottom: $margin-xl;
+    padding: $padding-lg $padding-xl;
+    background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+    border-radius: $border-radius-lg;
+    color: white;
+
+    .ant-typography {
+      color: white !important;
+      margin-bottom: 0 !important;
+    }
+
+    .ant-typography-caption {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+  }
+
+  .stats-row {
+    margin-bottom: $margin-xl;
+
+    .stat-card {
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow-card;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .ant-statistic {
+        .ant-statistic-title {
+          color: $text-color-secondary;
+          font-size: $font-size-sm;
+          margin-bottom: $margin-xs;
+        }
+
+        .ant-statistic-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          .ant-statistic-content-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: $text-color;
+          }
+
+          .ant-statistic-content-prefix {
+            font-size: 24px;
+            color: $primary-color;
+            margin-right: $margin-sm;
+          }
+        }
+      }
+
+      .trend-up {
+        color: $success-color;
+        font-size: $font-size-sm;
+        font-weight: 500;
+      }
+
+      .trend-down {
+        color: $error-color;
+        font-size: $font-size-sm;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .charts-row {
+    margin-bottom: $margin-xl;
+
+    .ant-card {
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow-card;
+
+      .ant-card-head {
+        border-bottom: 1px solid $border-color-light;
+
+        .ant-card-head-title {
+          font-size: $font-size-lg;
+          font-weight: 600;
+          color: $text-color;
+        }
+      }
+
+      .ant-card-body {
+        padding: $padding-lg;
+      }
+    }
+  }
+
+  .content-row {
+    .ant-card {
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow-card;
+
+      .ant-card-head {
+        border-bottom: 1px solid $border-color-light;
+
+        .ant-card-head-title {
+          font-size: $font-size-lg;
+          font-weight: 600;
+          color: $text-color;
+        }
+      }
+    }
+
+    .goal-item {
+      margin-bottom: $margin-lg;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .goal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: $margin-sm;
+
+        span:first-child {
+          color: $text-color;
+          font-weight: 500;
+        }
+
+        span:last-child {
+          color: $primary-color;
+          font-weight: 600;
+        }
+      }
+
+      .ant-progress {
+        .ant-progress-bg {
+          background: linear-gradient(90deg, $primary-color 0%, lighten($primary-color, 20%) 100%);
+        }
+      }
+    }
+
+    .ant-table {
+      .ant-table-thead > tr > th {
+        background: $background-color;
+        border-bottom: 1px solid $border-color-light;
+        font-weight: 600;
+        color: $text-color;
+      }
+
+      .ant-table-tbody > tr > td {
+        border-bottom: 1px solid $border-color-light;
+        color: $text-color-secondary;
+      }
+
+      .ant-table-tbody > tr:hover > td {
+        background: rgba($primary-color, 0.02);
+      }
+    }
+  }
+}
+
+// 响应式设计
+@include respond-to(xs) {
+  .dashboard-container {
+    padding: $padding-md;
+
+    .welcome-section {
+      padding: $padding-md;
+      text-align: center;
+
+      h2 {
+        font-size: 20px !important;
+      }
+    }
+
+    .stats-row {
+      .stat-card {
+        .ant-statistic-content-value {
+          font-size: 24px !important;
+        }
+      }
+    }
+  }
+}
+
+@include respond-to(sm) {
+  .dashboard-container {
+    .stats-row {
+      .stat-card {
+        text-align: center;
+      }
+    }
+  }
+}

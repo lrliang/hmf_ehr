@@ -1,0 +1,299 @@
+// 通用组件样式
+
+// Loading 组件
+.loading-container {
+  @include flex-center;
+  min-height: 200px;
+  
+  &.full-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+  }
+}
+
+// 页面容器
+.page-container {
+  padding: $padding-lg;
+  background-color: $background-color-light;
+  min-height: calc(100vh - #{$layout-header-height});
+  
+  &.no-padding {
+    padding: 0;
+  }
+}
+
+// 页面头部
+.page-header {
+  @include flex(row, space-between, center);
+  margin-bottom: $margin-lg;
+  padding-bottom: $padding-md;
+  border-bottom: 1px solid $border-color-light;
+  
+  .page-title {
+    margin: 0;
+    font-size: $font-size-xl;
+    font-weight: 600;
+    color: $text-color;
+  }
+  
+  .page-actions {
+    @include flex(row, flex-end, center);
+    gap: $margin-sm;
+  }
+}
+
+// 内容卡片
+.content-card {
+  @include card;
+  
+  .card-header {
+    @include flex(row, space-between, center);
+    margin-bottom: $margin-lg;
+    padding-bottom: $padding-md;
+    border-bottom: 1px solid $border-color-light;
+    
+    .card-title {
+      margin: 0;
+      font-size: $font-size-lg;
+      font-weight: 500;
+    }
+    
+    .card-extra {
+      @include flex(row, flex-end, center);
+      gap: $margin-sm;
+    }
+  }
+  
+  .card-content {
+    // 内容区域样式
+  }
+}
+
+// 表格容器
+.table-container {
+  .table-header {
+    @include flex(row, space-between, center);
+    margin-bottom: $margin-md;
+    
+    .table-title {
+      font-size: $font-size-lg;
+      font-weight: 500;
+      color: $text-color;
+    }
+    
+    .table-actions {
+      @include flex(row, flex-end, center);
+      gap: $margin-sm;
+    }
+  }
+  
+  .table-footer {
+    @include flex(row, space-between, center);
+    margin-top: $margin-md;
+    padding-top: $padding-md;
+    border-top: 1px solid $border-color-light;
+  }
+}
+
+// 表单容器
+.form-container {
+  .form-header {
+    margin-bottom: $margin-lg;
+    
+    .form-title {
+      margin: 0 0 $margin-sm 0;
+      font-size: $font-size-xl;
+      font-weight: 600;
+    }
+    
+    .form-description {
+      margin: 0;
+      color: $text-color-secondary;
+    }
+  }
+  
+  .form-actions {
+    @include flex(row, center, center);
+    gap: $margin-md;
+    margin-top: $margin-xl;
+    padding-top: $padding-lg;
+    border-top: 1px solid $border-color-light;
+  }
+}
+
+// 搜索表单
+.search-form {
+  @include card;
+  margin-bottom: $margin-lg;
+  
+  .search-form-content {
+    .ant-form-item:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .search-form-actions {
+    @include flex(row, flex-end, center);
+    gap: $margin-sm;
+    margin-top: $margin-md;
+  }
+}
+
+// 统计卡片
+.stat-card {
+  @include card;
+  text-align: center;
+  
+  .stat-icon {
+    font-size: 48px;
+    margin-bottom: $margin-md;
+  }
+  
+  .stat-title {
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
+    margin-bottom: $margin-xs;
+  }
+  
+  .stat-value {
+    font-size: $font-size-xxl;
+    font-weight: 600;
+    color: $text-color;
+  }
+  
+  &.primary {
+    .stat-icon {
+      color: $primary-color;
+    }
+  }
+  
+  &.success {
+    .stat-icon {
+      color: $success-color;
+    }
+  }
+  
+  &.warning {
+    .stat-icon {
+      color: $warning-color;
+    }
+  }
+  
+  &.error {
+    .stat-icon {
+      color: $error-color;
+    }
+  }
+}
+
+// 空状态
+.empty-state {
+  @include flex-center;
+  flex-direction: column;
+  padding: $padding-xl;
+  color: $text-color-secondary;
+  
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: $margin-lg;
+    opacity: 0.5;
+  }
+  
+  .empty-title {
+    font-size: $font-size-lg;
+    margin-bottom: $margin-sm;
+    color: $text-color;
+  }
+  
+  .empty-description {
+    margin-bottom: $margin-lg;
+  }
+}
+
+// 状态标签
+.status-tag {
+  &.active {
+    color: $success-color;
+    background-color: rgba($success-color, 0.1);
+    border-color: rgba($success-color, 0.3);
+  }
+  
+  &.inactive {
+    color: $text-color-disabled;
+    background-color: rgba($text-color-disabled, 0.1);
+    border-color: rgba($text-color-disabled, 0.3);
+  }
+  
+  &.pending {
+    color: $warning-color;
+    background-color: rgba($warning-color, 0.1);
+    border-color: rgba($warning-color, 0.3);
+  }
+  
+  &.error {
+    color: $error-color;
+    background-color: rgba($error-color, 0.1);
+    border-color: rgba($error-color, 0.3);
+  }
+}
+
+// 响应式工具类
+@include respond-to(xs) {
+  .page-container {
+    padding: $padding-md;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $margin-md;
+    
+    .page-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+  
+  .content-card {
+    padding: $padding-md;
+    
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $margin-md;
+      
+      .card-extra {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+  }
+  
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $margin-md;
+    
+    .table-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+  
+  .search-form-actions {
+    justify-content: flex-start;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    
+    .ant-btn {
+      width: 100%;
+    }
+  }
+}

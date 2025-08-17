@@ -1,0 +1,189 @@
+@import '@/styles/variables.scss';
+@import '@/styles/mixins.scss';
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.login-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $padding-xl;
+  position: relative;
+  z-index: 1;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: $margin-xl;
+
+  .logo {
+    margin-bottom: $margin-lg;
+
+    img {
+      width: 80px;
+      height: 80px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
+  }
+
+  .title {
+    color: white !important;
+    margin-bottom: $margin-sm !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: $font-size-lg;
+  }
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+
+  .ant-card-body {
+    padding: $padding-xl;
+  }
+
+  .card-title {
+    text-align: center;
+    margin-bottom: $margin-xl !important;
+    color: $text-color;
+  }
+}
+
+.login-form {
+  .ant-form-item {
+    margin-bottom: $margin-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .ant-input-affix-wrapper,
+  .ant-input {
+    border-radius: 8px;
+    border: 1px solid $border-color;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+    }
+
+    &:focus,
+    &.ant-input-affix-wrapper-focused {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+    }
+  }
+
+  .login-button {
+    height: 48px;
+    border-radius: 8px;
+    font-size: $font-size-lg;
+    font-weight: 500;
+    background: linear-gradient(135deg, $primary-color 0%, lighten($primary-color, 10%) 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba($primary-color, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+.login-tips {
+  text-align: center;
+  margin-top: $margin-lg;
+  padding-top: $padding-lg;
+  border-top: 1px solid $border-color-light;
+}
+
+.login-footer {
+  text-align: center;
+  padding: $padding-lg;
+  position: relative;
+  z-index: 1;
+
+  .ant-typography {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+}
+
+// 响应式设计
+@include respond-to(xs) {
+  .login-content {
+    padding: $padding-lg;
+  }
+
+  .login-card {
+    max-width: 100%;
+
+    .ant-card-body {
+      padding: $padding-lg;
+    }
+  }
+
+  .login-header {
+    margin-bottom: $margin-lg;
+
+    .logo img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .title {
+      font-size: 24px !important;
+    }
+  }
+}
+
+@include respond-to(sm) {
+  .login-content {
+    padding: $padding-xl;
+  }
+}

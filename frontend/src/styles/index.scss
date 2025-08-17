@@ -1,0 +1,135 @@
+@import './variables.scss';
+@import './mixins.scss';
+@import './reset.scss';
+@import './components.scss';
+@import './utilities.scss';
+
+// 全局样式
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: $font-family;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $background-color-light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #a8a8a8;
+  }
+}
+
+// 选择文本样式
+::selection {
+  background-color: rgba($primary-color, 0.2);
+  color: $text-color;
+}
+
+::-moz-selection {
+  background-color: rgba($primary-color, 0.2);
+  color: $text-color;
+}
+
+// 链接样式
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color 0.3s;
+  
+  &:hover {
+    color: lighten($primary-color, 10%);
+  }
+  
+  &:focus {
+    outline: 2px solid rgba($primary-color, 0.3);
+    outline-offset: 2px;
+  }
+}
+
+// 表单元素
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+// 按钮重置
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  
+  &:focus {
+    outline: 2px solid rgba($primary-color, 0.3);
+    outline-offset: 2px;
+  }
+}
+
+// 图片响应式
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+// 代码样式
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  background-color: rgba($text-color, 0.06);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  background-color: $background-color;
+  padding: $padding-md;
+  border-radius: $border-radius-base;
+  overflow-x: auto;
+  
+  code {
+    background: none;
+    padding: 0;
+  }
+}
+
+// 打印样式
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
