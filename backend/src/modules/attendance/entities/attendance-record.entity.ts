@@ -10,6 +10,7 @@ export enum AttendanceResult {
   ABSENT = 'absent',           // 缺勤
   OVERTIME = 'overtime',       // 加班
   MANUAL = 'manual',           // 手动补签
+  INVALID = 'invalid',         // 无效打卡
 }
 
 export enum AttendanceType {

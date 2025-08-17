@@ -141,6 +141,7 @@ export class AttendanceService {
         early_leave: 0,
         absent: 0,
         overtime: 0,
+        invalid: 0,
         manual: 0,
       },
     );
@@ -261,6 +262,7 @@ export class AttendanceService {
       const result: ImportResultDto = {
         success: 0,
         failed: 0,
+        skipped: 0,
         total: rawData.length,
         errors: [],
         duration: 0,
@@ -276,8 +278,19 @@ export class AttendanceService {
         try {
           const record = await this.processExcelRow(row, employeeMap, rowNumber);
           if (record) {
-            validRecords.push(record);
-            result.success++;
+            // 检查是否已存在相同的打卡记录
+            const isDuplicate = await this.checkDuplicateRecord(
+              record.employeeId,
+              record.attendanceDate,
+              record.attendanceType
+            );
+
+            if (isDuplicate) {
+              result.skipped++;
+            } else {
+              validRecords.push(record);
+              result.success++;
+            }
           }
         } catch (error) {
           result.failed++;
@@ -318,6 +331,25 @@ export class AttendanceService {
         `Excel文件缺少必需的列: ${missingHeaders.join(', ')}`
       );
     }
+  }
+
+  /**
+   * 检查是否存在重复的打卡记录
+   */
+  private async checkDuplicateRecord(
+    employeeId: number,
+    attendanceDate: Date,
+    attendanceType: AttendanceType
+  ): Promise<boolean> {
+    const existingRecord = await this.attendanceRecordRepository.findOne({
+      where: {
+        employeeId,
+        attendanceDate,
+        attendanceType,
+      },
+    });
+
+    return !!existingRecord;
   }
 
   /**

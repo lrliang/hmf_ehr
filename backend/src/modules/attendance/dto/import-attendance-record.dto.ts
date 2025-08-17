@@ -77,6 +77,9 @@ export class ImportResultDto {
   @ApiProperty({ description: '失败数量' })
   failed: number;
 
+  @ApiProperty({ description: '跳过重复数量' })
+  skipped: number;
+
   @ApiProperty({ description: '总处理数量' })
   total: number;
 
@@ -109,6 +112,7 @@ export const RESULT_MAPPING: Record<string, AttendanceResult> = {
   '迟到': AttendanceResult.LATE,
   '早退': AttendanceResult.EARLY_LEAVE,
   '缺勤': AttendanceResult.ABSENT,
+  '无效': AttendanceResult.INVALID,
   '加班': AttendanceResult.OVERTIME,
   '手动补签': AttendanceResult.MANUAL,
   '补签': AttendanceResult.MANUAL,
