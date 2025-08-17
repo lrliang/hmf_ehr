@@ -64,7 +64,8 @@ export default defineConfig(({ command, mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `@import "@/styles/variables.scss";`,
+          // 移除 additionalData 避免重复导入
+          // additionalData: `@import "@/styles/variables.scss";`,
         },
       },
     },

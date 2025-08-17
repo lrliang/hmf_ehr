@@ -5,7 +5,7 @@ import {
   TeamOutlined, 
   ClockCircleOutlined, 
   DollarOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   FallOutlined,
 } from '@ant-design/icons';
 import { Helmet } from 'react-helmet-async';
@@ -102,7 +102,7 @@ const Dashboard: React.FC = () => {
                 prefix={<TeamOutlined />}
                 suffix={
                   <span className="trend-up">
-                    <TrendingUpOutlined /> 12%
+                    <RiseOutlined /> 12%
                   </span>
                 }
               />
