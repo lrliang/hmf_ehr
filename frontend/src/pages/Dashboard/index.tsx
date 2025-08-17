@@ -6,7 +6,7 @@ import {
   ClockCircleOutlined, 
   DollarOutlined,
   TrendingUpOutlined,
-  TrendingDownOutlined,
+  FallOutlined,
 } from '@ant-design/icons';
 import { Helmet } from 'react-helmet-async';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -127,7 +127,7 @@ const Dashboard: React.FC = () => {
                 prefix={<UserOutlined />}
                 suffix={
                   <span className="trend-down">
-                    <TrendingDownOutlined /> 25%
+                    <FallOutlined /> 25%
                   </span>
                 }
               />
