@@ -329,30 +329,32 @@ export class AttendanceService {
     rowNumber: number
   ): Promise<AttendanceRecord | null> {
     // 验证必需字段
-    if (!row.姓名?.trim()) {
+    if (!row.姓名 || String(row.姓名).trim() === '') {
       throw new Error(`第${rowNumber}行: 姓名不能为空`);
     }
     if (!row.考勤日期) {
       throw new Error(`第${rowNumber}行: 考勤日期不能为空`);
     }
-    if (!row.考勤时间?.trim()) {
+    if (!row.考勤时间 || String(row.考勤时间).trim() === '') {
       throw new Error(`第${rowNumber}行: 考勤时间不能为空`);
     }
-    if (!row.打卡结果?.trim()) {
+    if (!row.打卡结果 || String(row.打卡结果).trim() === '') {
       throw new Error(`第${rowNumber}行: 打卡结果不能为空`);
     }
 
     // 查找员工
-    const employee = employeeMap.get(row.姓名.trim());
+    const employeeName = String(row.姓名).trim();
+    const employee = employeeMap.get(employeeName);
     if (!employee) {
-      throw new Error(`第${rowNumber}行: 找不到员工 "${row.姓名}"`);
+      throw new Error(`第${rowNumber}行: 找不到员工 "${employeeName}"`);
     }
 
     // 转换打卡结果
-    const result = RESULT_MAPPING[row.打卡结果.trim()];
+    const resultValue = String(row.打卡结果).trim();
+    const result = RESULT_MAPPING[resultValue];
     if (!result) {
       throw new Error(
-        `第${rowNumber}行: 无效的打卡结果 "${row.打卡结果}"，支持的值: ${Object.keys(RESULT_MAPPING).join(', ')}`
+        `第${rowNumber}行: 无效的打卡结果 "${resultValue}"，支持的值: ${Object.keys(RESULT_MAPPING).join(', ')}`
       );
     }
 
@@ -375,7 +377,7 @@ export class AttendanceService {
 
     // 解析实际打卡时间
     let checkTime: Date | null = null;
-    if (row.打卡时间?.trim()) {
+    if (row.打卡时间 && String(row.打卡时间).trim() !== '') {
       try {
         if (typeof row.打卡时间 === 'number') {
           // Excel时间序列号
@@ -383,7 +385,7 @@ export class AttendanceService {
           checkTime = new Date(attendanceDate.getTime() + timeValue);
         } else {
           // 字符串格式，组合日期和时间
-          const timeStr = row.打卡时间.trim();
+          const timeStr = String(row.打卡时间).trim();
           if (timeStr.includes(':')) {
             const [hours, minutes] = timeStr.split(':');
             checkTime = new Date(attendanceDate);
@@ -404,7 +406,7 @@ export class AttendanceService {
 
     // 推断打卡类型（基于时间或设置默认值）
     let attendanceType = AttendanceType.CHECK_IN;
-    const attendanceTimeStr = row.考勤时间.trim();
+    const attendanceTimeStr = String(row.考勤时间).trim();
     if (attendanceTimeStr.includes('下班') || attendanceTimeStr.includes('18:') || 
         attendanceTimeStr.includes('17:') || attendanceTimeStr.includes('19:')) {
       attendanceType = AttendanceType.CHECK_OUT;
@@ -418,11 +420,11 @@ export class AttendanceService {
       checkTime,
       attendanceType,
       result,
-      address: row.打卡地址?.trim() || null,
-      remark: row.打卡备注?.trim() || null,
-      exceptionReason: row.异常打卡原因?.trim() || null,
-      device: row.打卡设备?.trim() || null,
-      adminRemark: row.管理员修改备注?.trim() || null,
+      address: row.打卡地址 ? String(row.打卡地址).trim() || null : null,
+      remark: row.打卡备注 ? String(row.打卡备注).trim() || null : null,
+      exceptionReason: row.异常打卡原因 ? String(row.异常打卡原因).trim() || null : null,
+      device: row.打卡设备 ? String(row.打卡设备).trim() || null : null,
+      adminRemark: row.管理员修改备注 ? String(row.管理员修改备注).trim() || null : null,
       isManual: result === AttendanceResult.MANUAL,
     });
 
