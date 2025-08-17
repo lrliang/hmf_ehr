@@ -25,7 +25,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <PersistGate loading={<Loading />} persistor={persistor}>
         <BrowserRouter
           future={{
-            v7_relativeSplatPath: true
+            v7_relativeSplatPath: true,
+            v7_startTransition: true
           }}
         >
           <HelmetProvider>
