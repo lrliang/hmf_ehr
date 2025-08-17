@@ -5,7 +5,8 @@ import type {
   CreateAttendanceRecordParams,
   UpdateAttendanceRecordParams,
   AttendanceStatistics,
-  PaginatedResult 
+  PaginatedResult,
+  ImportResult 
 } from '@/types';
 
 export const attendanceApi = {
@@ -149,5 +150,16 @@ export const attendanceApi = {
     storeId?: number;
   }): Promise<PaginatedResult<AttendanceRecord>> => {
     return request.get('/attendance/abnormal-records', { params });
+  },
+
+  // 导入Excel打卡明细数据
+  importAttendanceRecords: (file: File): Promise<ImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request.post('/attendance/records/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 };

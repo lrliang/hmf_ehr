@@ -9,13 +9,18 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { AttendanceRecord } from './entities/attendance-record.entity';
@@ -28,6 +33,7 @@ import {
   CreateAttendanceRecordDto,
   UpdateAttendanceRecordDto,
   QueryAttendanceRecordDto,
+  ImportResultDto,
 } from './dto';
 
 @ApiTags('Attendance')
@@ -203,5 +209,48 @@ export class AttendanceController {
     };
     
     return await this.attendanceService.getAttendanceRecords(modifiedQueryDto);
+  }
+
+  @Post('records/import')
+  @ApiOperation({ summary: '导入Excel打卡明细数据' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Excel文件上传',
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Excel文件(.xlsx, .xls)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: '导入成功',
+    type: ImportResultDto,
+  })
+  @UseInterceptors(FileInterceptor('file', {
+    fileFilter: (req, file, cb) => {
+      if (!file.originalname.match(/\.(xlsx|xls)$/)) {
+        return cb(new Error('只支持Excel文件格式(.xlsx, .xls)'), false);
+      }
+      cb(null, true);
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB限制
+    },
+  }))
+  // @Roles(Role.HR, Role.ADMIN)
+  async importAttendanceRecords(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<ImportResultDto> {
+    if (!file) {
+      throw new Error('请上传Excel文件');
+    }
+
+    return await this.attendanceService.importAttendanceRecords(file);
   }
 }

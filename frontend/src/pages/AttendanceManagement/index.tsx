@@ -16,19 +16,27 @@ import {
   Popconfirm,
   Row,
   Col,
-  Statistic
+  Statistic,
+  Upload,
+  Alert,
+  Progress,
+  List
 } from 'antd';
 import { 
   SearchOutlined, 
   ReloadOutlined, 
   ExportOutlined,
+  ImportOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   ClockCircleOutlined,
   UserOutlined,
   CalendarOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  FileExcelOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import { Helmet } from 'react-helmet-async';
 import type { ColumnsType } from 'antd/es/table';
@@ -42,7 +50,9 @@ import type {
   AttendanceRecord, 
   QueryAttendanceRecordParams,
   UpdateAttendanceRecordParams,
-  PaginatedResult
+  PaginatedResult,
+  ImportResult,
+  ImportError
 } from '@/types';
 
 const { Title } = Typography;
@@ -83,7 +93,10 @@ const AttendanceManagement: React.FC = () => {
   });
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [importModalVisible, setImportModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [statistics, setStatistics] = useState({
     total: 0,
     normal: 0,
@@ -238,6 +251,60 @@ const AttendanceManagement: React.FC = () => {
     } catch (error) {
       message.error('导出失败');
     }
+  };
+
+  // 导入数据
+  const handleImport = () => {
+    setImportResult(null);
+    setImportModalVisible(true);
+  };
+
+  // 处理文件上传
+  const handleFileUpload = async (file: File) => {
+    // 验证文件类型
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ];
+    
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+      message.error('请上传Excel文件(.xlsx或.xls格式)');
+      return false;
+    }
+
+    // 验证文件大小（10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      message.error('文件大小不能超过10MB');
+      return false;
+    }
+
+    setImporting(true);
+    try {
+      const result = await attendanceApi.importAttendanceRecords(file);
+      setImportResult(result);
+      
+      if (result.success > 0) {
+        message.success(`成功导入 ${result.success} 条记录`);
+        // 刷新数据列表
+        loadData();
+      }
+      
+      if (result.failed > 0) {
+        message.warning(`${result.failed} 条记录导入失败，请查看错误详情`);
+      }
+    } catch (error: any) {
+      message.error(`导入失败: ${error.message || '未知错误'}`);
+    } finally {
+      setImporting(false);
+    }
+    
+    return false; // 阻止默认上传行为
+  };
+
+  // 关闭导入模态框
+  const handleCloseImportModal = () => {
+    setImportModalVisible(false);
+    setImportResult(null);
   };
 
   // 表格列定义
@@ -549,6 +616,9 @@ const AttendanceManagement: React.FC = () => {
                 <Button onClick={handleExport} icon={<ExportOutlined />}>
                   导出
                 </Button>
+                <Button onClick={handleImport} icon={<ImportOutlined />}>
+                  导入
+                </Button>
               </Space>
             </Form.Item>
           </Form>
@@ -690,6 +760,125 @@ const AttendanceManagement: React.FC = () => {
               <TextArea rows={3} placeholder="请输入管理员修改备注" />
             </Form.Item>
           </Form>
+        </Modal>
+
+        {/* 导入模态框 */}
+        <Modal
+          title={<span><ImportOutlined /> 导入Excel打卡明细</span>}
+          open={importModalVisible}
+          onCancel={handleCloseImportModal}
+          footer={null}
+          width={600}
+          destroyOnClose
+        >
+          {!importResult ? (
+            <div>
+              <Alert
+                message="导入说明"
+                description={
+                  <div>
+                    <p>1. 请确保Excel文件包含以下列（顺序可以不同）：</p>
+                    <p style={{ marginLeft: 20, color: '#1890ff' }}>
+                      姓名、考勤日期、考勤时间、打卡时间、打卡结果、打卡地址、打卡备注、异常打卡原因、打卡设备、管理员修改备注
+                    </p>
+                    <p>2. 其中 <strong style={{ color: '#f5222d' }}>姓名、考勤日期、考勤时间、打卡结果</strong> 为必填字段</p>
+                    <p>3. 打卡结果支持：正常打卡/正常、迟到、早退、缺勤、加班、手动补签/补签</p>
+                    <p>4. 文件大小不能超过10MB</p>
+                  </div>
+                }
+                type="info"
+                style={{ marginBottom: 20 }}
+              />
+
+              <Upload.Dragger
+                name="file"
+                multiple={false}
+                accept=".xlsx,.xls"
+                beforeUpload={handleFileUpload}
+                style={{ marginBottom: 20 }}
+              >
+                <p className="ant-upload-drag-icon">
+                  <FileExcelOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+                </p>
+                <p className="ant-upload-text">点击或拖拽Excel文件到此区域上传</p>
+                <p className="ant-upload-hint">
+                  支持单个文件上传，仅支持 .xlsx 和 .xls 格式
+                </p>
+              </Upload.Dragger>
+
+              {importing && (
+                <div style={{ textAlign: 'center' }}>
+                  <Progress type="circle" percent={50} status="active" />
+                  <p style={{ marginTop: 16 }}>正在导入数据，请稍候...</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <Alert
+                message="导入完成"
+                description={
+                  <div>
+                    <p><strong>总计处理：</strong>{importResult.total} 条记录</p>
+                    <p><CheckCircleOutlined style={{ color: '#52c41a' }} /> <strong>成功导入：</strong>{importResult.success} 条</p>
+                    <p><CloseCircleOutlined style={{ color: '#f5222d' }} /> <strong>导入失败：</strong>{importResult.failed} 条</p>
+                    {importResult.duration && (
+                      <p><strong>处理耗时：</strong>{importResult.duration}ms</p>
+                    )}
+                  </div>
+                }
+                type={importResult.failed > 0 ? "warning" : "success"}
+                style={{ marginBottom: 20 }}
+              />
+
+              {importResult.errors && importResult.errors.length > 0 && (
+                <div>
+                  <h4 style={{ marginBottom: 16 }}>错误详情：</h4>
+                  <List
+                    size="small"
+                    bordered
+                    dataSource={importResult.errors}
+                    renderItem={(error: ImportError) => (
+                      <List.Item>
+                        <div style={{ width: '100%' }}>
+                          <div style={{ color: '#f5222d', fontWeight: 'bold' }}>
+                            第 {error.row} 行：{error.message}
+                          </div>
+                          {error.data && (
+                            <div style={{ 
+                              marginTop: 8, 
+                              padding: 8, 
+                              backgroundColor: '#fafafa', 
+                              borderRadius: 4,
+                              fontSize: 12,
+                              color: '#666'
+                            }}>
+                              原始数据：{JSON.stringify(error.data)}
+                            </div>
+                          )}
+                        </div>
+                      </List.Item>
+                    )}
+                    style={{ maxHeight: 300, overflow: 'auto' }}
+                  />
+                </div>
+              )}
+
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <Space>
+                  <Button onClick={handleCloseImportModal}>
+                    关闭
+                  </Button>
+                  <Button type="primary" onClick={() => {
+                    setImportResult(null);
+                    setImportModalVisible(true);
+                  }}>
+                    继续导入
+                  </Button>
+                </Space>
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </>

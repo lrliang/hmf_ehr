@@ -193,6 +193,23 @@ export interface AttendanceStatistics {
   manual: number;
 }
 
+// 导入结果类型
+export interface ImportResult {
+  success: number;
+  failed: number;
+  total: number;
+  errors?: ImportError[];
+  duration?: number;
+}
+
+// 导入错误类型
+export interface ImportError {
+  row: number;
+  type: string;
+  message: string;
+  data?: any;
+}
+
 // 请假申请类型
 export interface LeaveApplication {
   id: number;
