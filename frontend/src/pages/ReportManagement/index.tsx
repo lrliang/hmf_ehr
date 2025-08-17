@@ -8,7 +8,7 @@ const ReportManagement: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>报表统计 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`报表统计 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
       <div className="page-container">
         <div className="page-header">

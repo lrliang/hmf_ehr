@@ -8,7 +8,7 @@ const LeaveManagement: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>请假管理 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`请假管理 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
       <div className="page-container">
         <div className="page-header">

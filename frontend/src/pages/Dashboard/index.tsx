@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>仪表盘 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`仪表盘 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
 
       <div className="dashboard-container">

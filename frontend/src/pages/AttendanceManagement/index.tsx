@@ -8,7 +8,7 @@ const AttendanceManagement: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>考勤管理 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`考勤管理 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
 
       <div className="page-container">

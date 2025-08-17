@@ -8,7 +8,7 @@ const Profile: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>个人中心 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`个人中心 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
       <div className="page-container">
         <div className="page-header">

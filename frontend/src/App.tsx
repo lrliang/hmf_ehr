@@ -27,8 +27,8 @@ function App() {
   return (
     <>
       <Helmet>
-        <title>{import.meta.env.VITE_APP_TITLE}</title>
-        <meta name="description" content={import.meta.env.VITE_APP_DESCRIPTION} />
+        <title>{import.meta.env.VITE_APP_TITLE || 'HMF EHR 人力资源管理系统'}</title>
+        <meta name="description" content={import.meta.env.VITE_APP_DESCRIPTION || '县城烘焙连锁店HR数字化人力资源管理系统'} />
       </Helmet>
 
       <Suspense fallback={<Loading />}>

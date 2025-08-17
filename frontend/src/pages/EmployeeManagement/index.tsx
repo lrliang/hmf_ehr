@@ -8,7 +8,7 @@ const EmployeeManagement: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>员工管理 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`员工管理 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
 
       <div className="page-container">

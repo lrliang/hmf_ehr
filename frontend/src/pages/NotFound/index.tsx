@@ -9,7 +9,7 @@ const NotFound: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>页面未找到 - {import.meta.env.VITE_APP_TITLE}</title>
+        <title>{`页面未找到 - ${import.meta.env.VITE_APP_TITLE || 'HMF EHR 系统'}`}</title>
       </Helmet>
       
       <div style={{ 
