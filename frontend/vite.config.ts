@@ -33,9 +33,15 @@ export default defineConfig(({ command, mode }) => {
       host: true,
       proxy: {
         '/api': {
-          target: env.VITE_API_BASE_URL || 'http://localhost:8080',
+          target: env.VITE_API_BASE_URL || 'http://localhost:8081',
           changeOrigin: true,
           secure: false,
+        },
+        '/auth': {
+          target: 'http://localhost:8081',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/auth/, '/api/v1/auth'),
         },
       },
     },
