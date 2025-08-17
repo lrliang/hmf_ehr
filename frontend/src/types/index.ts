@@ -99,20 +99,98 @@ export interface Position {
   updatedAt: string;
 }
 
-// 考勤记录类型
+// 考勤打卡类型枚举
+export enum AttendanceResult {
+  ON_TIME = 'on_time',         // 正常打卡
+  LATE = 'late',               // 迟到
+  EARLY_LEAVE = 'early_leave', // 早退
+  ABSENT = 'absent',           // 缺勤
+  OVERTIME = 'overtime',       // 加班
+  MANUAL = 'manual',           // 手动补签
+}
+
+export enum AttendanceType {
+  CHECK_IN = 'check_in',       // 上班打卡
+  CHECK_OUT = 'check_out',     // 下班打卡
+  BREAK_OUT = 'break_out',     // 外出打卡
+  BREAK_IN = 'break_in',       // 回到打卡
+}
+
+// 考勤打卡记录类型
 export interface AttendanceRecord {
   id: number;
   employeeId: number;
-  storeId: number;
-  checkInTime?: string;
-  checkOutTime?: string;
-  checkInLocation?: string;
-  checkOutLocation?: string;
-  status: 'normal' | 'late' | 'early_leave' | 'absent' | 'overtime';
-  workHours?: number;
-  overtimeHours?: number;
-  createdDate: string;
+  employee: Employee;
+  attendanceDate: string;      // 考勤日期
+  attendanceTime: string;      // 考勤时间（应打卡时间）
+  checkTime?: string;          // 实际打卡时间
+  attendanceType: AttendanceType;
+  result: AttendanceResult;
+  address?: string;            // 打卡地址
+  location?: string;           // 打卡经纬度
+  remark?: string;             // 打卡备注
+  exceptionReason?: string;    // 异常打卡原因
+  device?: string;             // 打卡设备
+  deviceInfo?: string;         // 设备信息
+  adminRemark?: string;        // 管理员修改备注
+  modifiedBy?: number;         // 管理员修改人ID
+  modifiedAt?: string;         // 管理员修改时间
+  isManual: boolean;           // 是否手动补签
+  shift?: string;              // 工作班次
   createdAt: string;
+  updatedAt: string;
+}
+
+// 查询打卡明细参数
+export interface QueryAttendanceRecordParams {
+  page: number;
+  pageSize: number;
+  employeeName?: string;
+  employeeId?: number;
+  startDate?: string;
+  endDate?: string;
+  attendanceType?: AttendanceType;
+  result?: AttendanceResult;
+  storeId?: number;
+  positionId?: number;
+  isManual?: boolean;
+  shift?: string;
+}
+
+// 创建打卡记录参数
+export interface CreateAttendanceRecordParams {
+  employeeId: number;
+  attendanceDate: string;
+  attendanceTime: string;
+  checkTime?: string;
+  attendanceType: AttendanceType;
+  result: AttendanceResult;
+  address?: string;
+  location?: string;
+  remark?: string;
+  exceptionReason?: string;
+  device?: string;
+  deviceInfo?: string;
+  isManual?: boolean;
+  shift?: string;
+}
+
+// 更新打卡记录参数
+export interface UpdateAttendanceRecordParams {
+  result?: AttendanceResult;
+  exceptionReason?: string;
+  adminRemark: string;
+}
+
+// 考勤统计类型
+export interface AttendanceStatistics {
+  total: number;
+  on_time: number;
+  late: number;
+  early_leave: number;
+  absent: number;
+  overtime: number;
+  manual: number;
 }
 
 // 请假申请类型
