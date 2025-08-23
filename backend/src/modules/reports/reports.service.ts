@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AttendanceDailyReport, CalculationStatus } from './entities/attendance-daily-report.entity';
+import { AttendanceMonthlyReport, MonthlyReportStatus } from './entities/attendance-monthly-report.entity';
 import { AttendanceRecord, AttendanceResult, AttendanceType } from '../attendance/entities/attendance-record.entity';
 import { Employee } from '../employees/entities/employee.entity';
 
@@ -59,6 +60,8 @@ export class ReportsService {
   constructor(
     @InjectRepository(AttendanceDailyReport)
     private readonly dailyReportRepository: Repository<AttendanceDailyReport>,
+    @InjectRepository(AttendanceMonthlyReport)
+    private readonly monthlyReportRepository: Repository<AttendanceMonthlyReport>,
     @InjectRepository(AttendanceRecord)
     private readonly attendanceRecordRepository: Repository<AttendanceRecord>,
     @InjectRepository(Employee)
@@ -164,6 +167,10 @@ export class ReportsService {
       }
       
       this.logger.log(`考勤日报计算完成，处理了 ${processedCount} 条记录`);
+      
+      // 自动触发月报计算
+      await this.triggerMonthlyReportCalculation(options);
+      
       return processedCount;
       
     } catch (error) {
@@ -640,16 +647,17 @@ export class ReportsService {
   }
 
   /**
-   * 定时任务：每天凌晨2点计算前一天的考勤日报
+   * 定时任务：每天凌晨2点计算前一天的考勤日报，并自动触发月报计算
    */
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async scheduledDailyReportCalculation(): Promise<void> {
-    this.logger.log('开始执行定时考勤日报计算任务');
+    this.logger.log('开始执行定时考勤日报计算任务（包含月报自动计算）');
     
     try {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       
+      // 计算日报，会自动触发相关月份的月报计算
       const processedCount = await this.calculateDailyReports({
         startDate: yesterday,
         endDate: yesterday,
@@ -736,5 +744,410 @@ export class ReportsService {
     } else {
       return await this.calculateDailyReports(options);
     }
+  }
+
+  // ============= 月报计算相关方法 =============
+
+  /**
+   * 根据日报计算触发月报计算
+   */
+  private async triggerMonthlyReportCalculation(options: CalculateReportOptions): Promise<void> {
+    try {
+      this.logger.log('开始自动触发月报计算');
+
+      // 获取涉及的月份
+      const months = this.extractMonthsFromOptions(options);
+      
+      for (const month of months) {
+        this.logger.log(`正在计算 ${month} 的月报`);
+        
+        if (options.employeeId) {
+          // 单个员工
+          await this.calculateEmployeeMonthlyReport(options.employeeId, month);
+        } else {
+          // 所有员工
+          await this.calculateAllEmployeesMonthlyReport(month);
+        }
+      }
+      
+      this.logger.log(`月报计算完成，处理了 ${months.length} 个月份`);
+    } catch (error) {
+      this.logger.error('月报计算失败:', error.stack);
+      // 月报计算失败不应该阻止日报计算的完成，所以这里只记录错误
+    }
+  }
+
+  /**
+   * 从选项中提取涉及的月份
+   */
+  private extractMonthsFromOptions(options: CalculateReportOptions): string[] {
+    const months = new Set<string>();
+    
+    if (options.startDate && options.endDate) {
+      const current = new Date(options.startDate);
+      const end = new Date(options.endDate);
+      
+      while (current <= end) {
+        const monthStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+        months.add(monthStr);
+        
+        // 移动到下个月
+        current.setMonth(current.getMonth() + 1);
+        current.setDate(1); // 确保不会因为日期溢出而跳过月份
+      }
+    } else {
+      // 如果没有指定日期范围，计算当前月份
+      const now = new Date();
+      const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      months.add(monthStr);
+    }
+    
+    return Array.from(months);
+  }
+
+  /**
+   * 计算单个员工某个月的月报
+   */
+  async calculateEmployeeMonthlyReport(employeeId: number, reportMonth: string): Promise<AttendanceMonthlyReport | null> {
+    try {
+      this.logger.debug(`开始计算员工 ${employeeId} 在 ${reportMonth} 的月报`);
+
+      // 获取员工信息
+      const employee = await this.employeeRepository.findOne({ where: { id: employeeId } });
+      if (!employee) {
+        this.logger.warn(`员工 ${employeeId} 不存在，跳过月报计算`);
+        return null;
+      }
+
+      // 检查是否已存在月报记录
+      const existingReport = await this.monthlyReportRepository.findOne({
+        where: { employeeId, reportMonth }
+      });
+
+      // 如果已经是确认状态，跳过重新计算
+      if (existingReport && existingReport.confirmationStatus === MonthlyReportStatus.CONFIRMED) {
+        this.logger.debug(`员工 ${employee.name} 的 ${reportMonth} 月报已确认，跳过重新计算`);
+        return existingReport;
+      }
+
+      // 获取该月的所有日报数据
+      const [year, month] = reportMonth.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1); // 月初
+      const endDate = new Date(year, month, 0); // 月末
+
+      const dailyReports = await this.dailyReportRepository.find({
+        where: {
+          employeeId,
+          reportDate: Between(startDate, endDate)
+        },
+        order: { reportDate: 'ASC' }
+      });
+
+      // 计算月报数据
+      const monthlyData = this.calculateMonthlyReportFromDailyReports(
+        employee, reportMonth, dailyReports, startDate, endDate
+      );
+
+      // 保存月报
+      const savedReport = await this.saveMonthlyReport(monthlyData, existingReport);
+      
+      this.logger.debug(`员工 ${employee.name} 的 ${reportMonth} 月报计算完成`);
+      return savedReport;
+
+    } catch (error) {
+      this.logger.error(`计算员工 ${employeeId} 的 ${reportMonth} 月报失败:`, error.stack);
+      return null;
+    }
+  }
+
+  /**
+   * 计算所有员工某个月的月报
+   */
+  async calculateAllEmployeesMonthlyReport(reportMonth: string): Promise<number> {
+    let processedCount = 0;
+
+    try {
+      // 获取所有员工
+      const employees = await this.employeeRepository.find();
+
+      for (const employee of employees) {
+        const result = await this.calculateEmployeeMonthlyReport(employee.id, reportMonth);
+        if (result) {
+          processedCount++;
+        }
+      }
+
+      return processedCount;
+    } catch (error) {
+      this.logger.error(`计算所有员工 ${reportMonth} 月报失败:`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 从日报数据计算月报统计
+   */
+  private calculateMonthlyReportFromDailyReports(
+    employee: Employee,
+    reportMonth: string,
+    dailyReports: AttendanceDailyReport[],
+    startDate: Date,
+    endDate: Date
+  ): Partial<AttendanceMonthlyReport> {
+    
+    // 计算应出勤天数（排除周末和法定假日）
+    const expectedWorkingDays = this.calculateExpectedWorkingDays(startDate, endDate);
+    
+    // 汇总统计
+    const stats = {
+      // 基础信息
+      employeeId: employee.id,
+      reportMonth,
+      employeeNo: employee.employeeNo,
+      realName: employee.name,
+      nickname: employee.name,
+      
+      // 出勤统计
+      expectedWorkingDays,
+      actualWorkingDays: dailyReports.filter(r => !r.isAbsent).length,
+      legalHolidayDays: dailyReports.reduce((sum, r) => sum + r.legalHolidayDays, 0),
+      absentDays: dailyReports.filter(r => r.isAbsent).length,
+      
+      // 各种假期天数汇总
+      personalLeaveDays: dailyReports.reduce((sum, r) => sum + r.personalLeaveDays, 0),
+      annualLeaveDays: dailyReports.reduce((sum, r) => sum + r.annualLeaveDays, 0),
+      compensatoryLeaveDays: 0, // 调休假暂时为0，需要后续完善
+      sickLeaveDays: dailyReports.reduce((sum, r) => sum + r.sickLeaveDays, 0),
+      breastfeedingLeaveDays: 0, // 哺乳假暂时为0，需要后续完善
+      prenatalCheckupLeaveDays: 0, // 孕检假暂时为0，需要后续完善
+      childcareLeaveDays: dailyReports.reduce((sum, r) => sum + r.childcareLeaveDays, 0),
+      marriageLeaveDays: 0, // 婚假暂时为0，需要后续完善
+      paternityLeaveDays: dailyReports.reduce((sum, r) => sum + r.paternityLeaveWorkingDays, 0),
+      maternityLeaveDays: dailyReports.reduce((sum, r) => sum + r.maternityLeaveWorkingDays, 0),
+      bereavementLeaveDays: dailyReports.reduce((sum, r) => sum + r.bereavementLeaveDays, 0),
+      workInjuryLeaveDays: 0, // 工伤假暂时为0，需要后续完善
+      homeVisitLeaveDays: 0, // 探亲假暂时为0，需要后续完善
+      
+      // 考勤时间统计
+      totalLateMinutes: dailyReports.reduce((sum, r) => sum + r.lateMinutes, 0),
+      totalEarlyLeaveMinutes: dailyReports.reduce((sum, r) => sum + r.earlyLeaveMinutes, 0),
+      makeupCardCount: dailyReports.reduce((sum, r) => sum + r.makeupCardCount, 0),
+      weekendOvertimeHours: dailyReports.reduce((sum, r) => sum + r.weekendOvertimeHours, 0),
+      legalHolidayOvertimeHours: dailyReports.reduce((sum, r) => sum + r.legalHolidayOvertimeHours, 0),
+      
+      // 补贴信息（暂时为0，需要后续完善）
+      businessTripNightAllowance: 0,
+      workingDayDutyAllowance: 0,
+      
+      // 状态信息
+      confirmationStatus: MonthlyReportStatus.DRAFT,
+      lastCalculatedAt: new Date(),
+      
+      // 计算快照
+      calculationSnapshot: {
+        dailyReportCount: dailyReports.length,
+        calculationDate: new Date(),
+        dailyReportIds: dailyReports.map(r => r.id)
+      }
+    };
+    
+    return stats;
+  }
+
+  /**
+   * 计算应出勤天数（排除周末和法定假日）
+   */
+  private calculateExpectedWorkingDays(startDate: Date, endDate: Date): number {
+    let workingDays = 0;
+    const current = new Date(startDate);
+    
+    while (current <= endDate) {
+      // 排除周末和法定假日
+      if (!this.isWeekend(current) && !this.isLegalHoliday(current)) {
+        workingDays++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return workingDays;
+  }
+
+  /**
+   * 保存月报数据
+   */
+  private async saveMonthlyReport(
+    monthlyData: Partial<AttendanceMonthlyReport>,
+    existingReport?: AttendanceMonthlyReport
+  ): Promise<AttendanceMonthlyReport> {
+    
+    if (existingReport) {
+      // 更新现有记录（保留确认状态相关字段）
+      Object.assign(existingReport, {
+        ...monthlyData,
+        // 保留确认流程字段
+        confirmationStatus: existingReport.confirmationStatus,
+        confirmationInitiatedAt: existingReport.confirmationInitiatedAt,
+        confirmationCompletedAt: existingReport.confirmationCompletedAt,
+        confirmedBy: existingReport.confirmedBy,
+        // 更新计算时间
+        lastCalculatedAt: new Date()
+      });
+      
+      return await this.monthlyReportRepository.save(existingReport);
+    } else {
+      // 创建新记录
+      const newReport = this.monthlyReportRepository.create(monthlyData);
+      return await this.monthlyReportRepository.save(newReport);
+    }
+  }
+
+  // ============= 月报查询和管理相关方法 =============
+
+  /**
+   * 获取月报列表（支持查询条件）
+   */
+  async getMonthlyReports(options: {
+    employeeId?: number;
+    reportMonth?: string;
+    confirmationStatus?: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const {
+      employeeId,
+      reportMonth,
+      confirmationStatus,
+      page = 1,
+      pageSize = 20
+    } = options;
+
+    // 构建查询条件
+    const where: any = {};
+    if (employeeId) where.employeeId = employeeId;
+    if (reportMonth) where.reportMonth = reportMonth;
+    if (confirmationStatus) where.confirmationStatus = confirmationStatus;
+
+    // 分页查询
+    const [reports, total] = await this.monthlyReportRepository.findAndCount({
+      where,
+      relations: ['employee'],
+      order: {
+        reportMonth: 'DESC',
+        employeeNo: 'ASC'
+      },
+      take: pageSize,
+      skip: (page - 1) * pageSize
+    });
+
+    return {
+      data: reports,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    };
+  }
+
+  /**
+   * 根据ID获取月报详情
+   */
+  async getMonthlyReportById(id: number): Promise<AttendanceMonthlyReport | null> {
+    return await this.monthlyReportRepository.findOne({
+      where: { id },
+      relations: ['employee']
+    });
+  }
+
+  /**
+   * 确认月报
+   */
+  async confirmMonthlyReport(id: number, remark?: string): Promise<AttendanceMonthlyReport> {
+    const report = await this.monthlyReportRepository.findOne({ where: { id } });
+    
+    if (!report) {
+      throw new Error('月报不存在');
+    }
+
+    // 检查状态是否允许确认
+    if (report.confirmationStatus === MonthlyReportStatus.CONFIRMED) {
+      throw new Error('月报已确认，无法重复确认');
+    }
+
+    if (report.confirmationStatus === MonthlyReportStatus.LOCKED) {
+      throw new Error('月报已锁定，无法确认');
+    }
+
+    // 更新确认状态
+    report.confirmationStatus = MonthlyReportStatus.CONFIRMED;
+    report.confirmationCompletedAt = new Date();
+    report.confirmationInitiatedAt = report.confirmationInitiatedAt || new Date();
+    
+    if (remark) {
+      report.remark = remark;
+    }
+
+    // TODO: 这里可以记录确认人信息
+    // report.confirmedBy = currentUserId;
+
+    return await this.monthlyReportRepository.save(report);
+  }
+
+  /**
+   * 批量确认月报
+   */
+  async batchConfirmMonthlyReports(ids: number[], remark?: string): Promise<{
+    successCount: number;
+    failedCount: number;
+    errors: string[];
+  }> {
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    for (const id of ids) {
+      try {
+        await this.confirmMonthlyReport(id, remark);
+        successCount++;
+      } catch (error) {
+        failedCount++;
+        errors.push(`月报ID ${id}: ${error.message}`);
+      }
+    }
+
+    return { successCount, failedCount, errors };
+  }
+
+  /**
+   * 获取月报统计信息
+   */
+  async getMonthlyReportStats(reportMonth?: string) {
+    const where: any = {};
+    if (reportMonth) where.reportMonth = reportMonth;
+
+    const [
+      totalCount,
+      draftCount,
+      pendingCount,
+      confirmedCount,
+      rejectedCount,
+      lockedCount
+    ] = await Promise.all([
+      this.monthlyReportRepository.count({ where }),
+      this.monthlyReportRepository.count({ where: { ...where, confirmationStatus: MonthlyReportStatus.DRAFT } }),
+      this.monthlyReportRepository.count({ where: { ...where, confirmationStatus: MonthlyReportStatus.PENDING } }),
+      this.monthlyReportRepository.count({ where: { ...where, confirmationStatus: MonthlyReportStatus.CONFIRMED } }),
+      this.monthlyReportRepository.count({ where: { ...where, confirmationStatus: MonthlyReportStatus.REJECTED } }),
+      this.monthlyReportRepository.count({ where: { ...where, confirmationStatus: MonthlyReportStatus.LOCKED } })
+    ]);
+
+    return {
+      total: totalCount,
+      draft: draftCount,
+      pending: pendingCount,
+      confirmed: confirmedCount,
+      rejected: rejectedCount,
+      locked: lockedCount,
+      confirmationRate: totalCount > 0 ? (confirmedCount / totalCount * 100).toFixed(2) : '0.00'
+    };
   }
 }

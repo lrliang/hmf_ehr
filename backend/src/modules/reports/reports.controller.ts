@@ -170,4 +170,134 @@ export class ReportsController {
       processing: processingReports.total,
     };
   }
+
+  // ============= 月报相关API =============
+
+  @Get('monthly-reports')
+  @ApiOperation({ 
+    summary: '获取考勤月报列表',
+    description: '分页查询考勤月报数据，支持按员工、月份、确认状态筛选'
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', description: '月报ID' },
+              employeeNo: { type: 'string', description: '员工工号' },
+              realName: { type: 'string', description: '真实姓名' },
+              reportMonth: { type: 'string', description: '报告月份' },
+              expectedWorkingDays: { type: 'number', description: '应出勤天数' },
+              actualWorkingDays: { type: 'number', description: '实出勤天数' },
+              totalLateMinutes: { type: 'number', description: '迟到总时长（分钟）' },
+              confirmationStatus: { type: 'string', description: '确认状态' },
+              lastCalculatedAt: { type: 'string', description: '最后计算时间' },
+            }
+          }
+        },
+        total: { type: 'number', description: '总记录数' },
+        page: { type: 'number', description: '当前页码' },
+        pageSize: { type: 'number', description: '每页数量' },
+        totalPages: { type: 'number', description: '总页数' },
+      }
+    }
+  })
+  async getMonthlyReports(
+    @Query('employeeId') employeeId?: number,
+    @Query('reportMonth') reportMonth?: string,
+    @Query('confirmationStatus') confirmationStatus?: string,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 20
+  ) {
+    return await this.reportsService.getMonthlyReports({
+      employeeId,
+      reportMonth,
+      confirmationStatus,
+      page,
+      pageSize,
+    });
+  }
+
+  @Post('calculate-monthly')
+  @ApiOperation({ 
+    summary: '手动触发考勤月报计算',
+    description: '根据指定条件计算考勤月报，基于已有的日报数据进行汇总'
+  })
+  @ApiResponse({
+    status: 200,
+    description: '计算成功',
+    schema: {
+      type: 'object',
+      properties: {
+        processedCount: { type: 'number', description: '处理的记录数量' },
+        reportMonth: { type: 'string', description: '计算的月份' },
+        message: { type: 'string', description: '处理结果信息' }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  @ApiResponse({ status: 500, description: '计算失败' })
+  async calculateMonthlyReports(
+    @Body() body: { employeeId?: number; reportMonth: string }
+  ) {
+    let processedCount = 0;
+    
+    if (body.employeeId) {
+      // 计算单个员工月报
+      const result = await this.reportsService.calculateEmployeeMonthlyReport(
+        body.employeeId,
+        body.reportMonth
+      );
+      processedCount = result ? 1 : 0;
+    } else {
+      // 计算所有员工月报
+      processedCount = await this.reportsService.calculateAllEmployeesMonthlyReport(body.reportMonth);
+    }
+
+    return {
+      processedCount,
+      reportMonth: body.reportMonth,
+      message: body.employeeId
+        ? `成功处理员工 ${body.employeeId} 在 ${body.reportMonth} 的月报`
+        : `成功处理 ${body.reportMonth} 的所有员工月报，共 ${processedCount} 条记录`
+    };
+  }
+
+  @Get('monthly-reports/:id')
+  @ApiOperation({ 
+    summary: '获取月报详情',
+    description: '获取指定月报的详细信息'
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+  })
+  @ApiResponse({ status: 404, description: '月报不存在' })
+  async getMonthlyReportDetail(@Query('id') id: number) {
+    return await this.reportsService.getMonthlyReportById(id);
+  }
+
+  @Post('monthly-reports/:id/confirm')
+  @ApiOperation({ 
+    summary: '确认月报',
+    description: '确认指定的月报数据'
+  })
+  @ApiResponse({
+    status: 200,
+    description: '确认成功',
+  })
+  @ApiResponse({ status: 404, description: '月报不存在' })
+  @ApiResponse({ status: 400, description: '月报状态不允许确认' })
+  async confirmMonthlyReport(
+    @Query('id') id: number,
+    @Body() body: { remark?: string }
+  ) {
+    return await this.reportsService.confirmMonthlyReport(id, body.remark);
+  }
 }
