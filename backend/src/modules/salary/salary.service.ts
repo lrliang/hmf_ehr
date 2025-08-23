@@ -480,18 +480,19 @@ export class SalaryService {
     employee: Employee, 
     monthlyReport: AttendanceMonthlyReport
   ): Promise<SalaryCalculationDetail> {
-    const baseSalary = employee.baseSalary || 0;
+    // 数据清理和验证
+    const baseSalary = this.cleanNumericValue(employee.baseSalary) || 0;
     
     // 1. 计算日工资和小时工资
     const dailyWage = baseSalary / this.config.standardPayDays;
     const hourlyWage = dailyWage / this.config.standardDailyHours;
 
-    // 2. 获取考勤数据
-    const expectedWorkingDays = monthlyReport.expectedWorkingDays || 0;
-    const actualWorkingDays = monthlyReport.actualWorkingDays || 0;
-    const personalLeaveDays = monthlyReport.personalLeaveDays || 0;
-    const weekendOvertimeHours = monthlyReport.weekendOvertimeHours || 0;
-    const legalHolidayOvertimeHours = monthlyReport.legalHolidayOvertimeHours || 0;
+    // 2. 获取考勤数据（清理和验证）
+    const expectedWorkingDays = this.cleanNumericValue(monthlyReport.expectedWorkingDays) || 0;
+    const actualWorkingDays = this.cleanNumericValue(monthlyReport.actualWorkingDays) || 0;
+    const personalLeaveDays = this.cleanNumericValue(monthlyReport.personalLeaveDays) || 0;
+    const weekendOvertimeHours = this.cleanNumericValue(monthlyReport.weekendOvertimeHours) || 0;
+    const legalHolidayOvertimeHours = this.cleanNumericValue(monthlyReport.legalHolidayOvertimeHours) || 0;
 
     // 3. 计算正常出勤工资（按比例）
     const attendanceRatio = expectedWorkingDays > 0 ? actualWorkingDays / expectedWorkingDays : 0;
@@ -569,6 +570,33 @@ export class SalaryService {
     }
 
     return restDays;
+  }
+
+  /**
+   * 清理和验证数值
+   * 处理可能的字符串格式错误，如 "0.000.00"
+   */
+  private cleanNumericValue(value: any): number {
+    if (value === null || value === undefined) {
+      return 0;
+    }
+    
+    // 如果是字符串，尝试清理格式错误
+    if (typeof value === 'string') {
+      // 移除可能的格式错误，如 "0.000.00" -> "0.00"
+      const cleaned = value.replace(/(\d+\.\d+)\.(\d+)/, '$1$2');
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    
+    // 如果是数字，直接返回
+    if (typeof value === 'number') {
+      return value;
+    }
+    
+    // 其他情况，尝试转换为数字
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
   }
 
   /**
