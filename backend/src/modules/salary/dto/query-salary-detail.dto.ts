@@ -19,6 +19,7 @@ export class QuerySalaryDetailDto extends PaginationDto {
   @ApiPropertyOptional({ description: '员工姓名' })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim())
   employeeName?: string;
 
   @ApiPropertyOptional({ description: '工资月份', example: '2024-01' })
@@ -75,7 +76,7 @@ export class QuerySalaryDetailDto extends PaginationDto {
   })
   @IsOptional()
   @IsString()
-  sortBy?: string = 'reportMonth';
+  sortBy?: string;
 
   @ApiPropertyOptional({ 
     description: '排序方向', 
@@ -84,5 +85,13 @@ export class QuerySalaryDetailDto extends PaginationDto {
   })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
-  sortOrder?: 'ASC' | 'DESC' = 'DESC';
+  sortOrder?: 'ASC' | 'DESC';
+
+  @ApiPropertyOptional({ 
+    description: '时间戳参数（用于缓存控制）',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  _t?: string;
 }

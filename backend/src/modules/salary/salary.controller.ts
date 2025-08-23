@@ -85,6 +85,7 @@ export class SalaryController {
     }
   })
   async findAll(@Query() query: QuerySalaryDetailDto): Promise<PaginatedResult<SalaryDetail>> {
+    console.log('Query parameters:', JSON.stringify(query, null, 2));
     return this.salaryService.findAll(query);
   }
 
