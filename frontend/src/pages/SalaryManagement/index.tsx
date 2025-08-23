@@ -101,7 +101,7 @@ const SalaryManagement: React.FC = () => {
       const result = await salaryApi.getSalaryDetails(finalParams);
       setData(result);
       setQueryParams(finalParams);
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '获取工资详情失败');
     } finally {
       setLoading(false);
@@ -114,7 +114,7 @@ const SalaryManagement: React.FC = () => {
     try {
       const result = await salaryApi.getSalaryStatistics(month);
       setStatistics(result.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('获取统计数据失败:', error);
     }
   }, []);
@@ -128,7 +128,7 @@ const SalaryManagement: React.FC = () => {
   }, []);
 
   // 搜索处理
-  const handleSearch = (values: any) => {
+  const handleSearch = (values: Record<string, unknown>) => {
     const searchParams: QuerySalaryDetailParams = {
       page: 1,
       limit: queryParams.limit,
@@ -162,7 +162,7 @@ const SalaryManagement: React.FC = () => {
   };
 
   // 计算工资
-  const handleCalculate = async (values: any) => {
+  const handleCalculate = async (values: Record<string, unknown>) => {
     setCalculating(true);
     try {
       const params: CalculateSalaryParams = {
@@ -181,7 +181,7 @@ const SalaryManagement: React.FC = () => {
       } else {
         message.warning('工资计算完成，但没有成功的记录');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '工资计算失败');
     } finally {
       setCalculating(false);
@@ -194,7 +194,7 @@ const SalaryManagement: React.FC = () => {
       await salaryApi.confirmSalaryDetail(record.id, 1); // TODO: 使用实际用户ID
       message.success('工资确认成功');
       fetchSalaryDetails();
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '工资确认失败');
     }
   };
@@ -205,7 +205,7 @@ const SalaryManagement: React.FC = () => {
       await salaryApi.markSalaryAsPaid(record.id, 1); // TODO: 使用实际用户ID
       message.success('工资发放标记成功');
       fetchSalaryDetails();
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '工资发放标记失败');
     }
   };
@@ -225,7 +225,7 @@ const SalaryManagement: React.FC = () => {
       message.success('批量确认成功');
       setSelectedRowKeys([]);
       fetchSalaryDetails();
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '批量确认失败');
     }
   };
@@ -236,7 +236,7 @@ const SalaryManagement: React.FC = () => {
       await salaryApi.deleteSalaryDetail(record.id);
       message.success('删除成功');
       fetchSalaryDetails();
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '删除失败');
     }
   };
@@ -254,7 +254,7 @@ const SalaryManagement: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       message.success('导出成功');
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(error.message || '导出失败');
     }
   };
