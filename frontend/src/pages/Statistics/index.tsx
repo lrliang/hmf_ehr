@@ -55,7 +55,7 @@ const Statistics: React.FC = () => {
           <Title level={2} className="page-title">统计分析</Title>
         </div>
 
-        <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ }}>
           {/* 左侧菜单 */}
           <Card 
             style={{ width: 200, height: 'fit-content' }}
