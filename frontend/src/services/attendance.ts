@@ -6,7 +6,12 @@ import type {
   UpdateAttendanceRecordParams,
   AttendanceStatistics,
   PaginatedResult,
-  ImportResult 
+  ImportResult,
+  AttendanceMonthlyReport,
+  QueryMonthlyReportParams,
+  CalculateMonthlyReportParams,
+  BatchConfirmMonthlyReportParams,
+  MonthlyReportStats
 } from '@/types';
 
 export const attendanceApi = {
@@ -147,6 +152,56 @@ export const attendanceApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+    });
+  },
+
+  // ============= 月报相关API =============
+
+  // 获取考勤月报列表
+  getMonthlyReports: (params: QueryMonthlyReportParams): Promise<PaginatedResult<AttendanceMonthlyReport>> => {
+    return request.get('/reports/monthly-reports', { params });
+  },
+
+  // 获取月报详情
+  getMonthlyReportById: (id: number): Promise<AttendanceMonthlyReport> => {
+    return request.get(`/reports/monthly-reports/${id}`);
+  },
+
+  // 手动触发月报计算
+  calculateMonthlyReport: (data: CalculateMonthlyReportParams): Promise<{
+    processedCount: number;
+    reportMonth: string;
+    message: string;
+  }> => {
+    return request.post('/reports/calculate-monthly', data);
+  },
+
+  // 确认月报
+  confirmMonthlyReport: (id: number, data: { remark?: string }): Promise<AttendanceMonthlyReport> => {
+    return request.post(`/reports/monthly-reports/${id}/confirm`, data);
+  },
+
+  // 批量确认月报
+  batchConfirmMonthlyReports: (data: BatchConfirmMonthlyReportParams): Promise<{
+    successCount: number;
+    failedCount: number;
+    errors: string[];
+  }> => {
+    return request.post('/reports/monthly-reports/batch-confirm', data);
+  },
+
+  // 获取月报统计信息
+  getMonthlyReportStats: (reportMonth?: string): Promise<MonthlyReportStats> => {
+    return request.get('/reports/monthly-stats', { 
+      params: reportMonth ? { reportMonth } : undefined 
+    });
+  },
+
+  // 导出月报数据
+  exportMonthlyReports: (params?: QueryMonthlyReportParams): Promise<Blob> => {
+    return request.get('/reports/monthly-reports/export', { 
+      params,
+      responseType: 'blob',
     });
   },
 };

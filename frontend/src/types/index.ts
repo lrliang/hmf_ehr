@@ -264,6 +264,104 @@ export interface SalaryRecord {
   updatedAt: string;
 }
 
+// 月报确认状态枚举
+export enum MonthlyReportStatus {
+  DRAFT = 'draft',           // 草稿状态
+  PENDING = 'pending',       // 待确认
+  CONFIRMED = 'confirmed',   // 已确认
+  REJECTED = 'rejected',     // 已拒绝
+  LOCKED = 'locked'          // 已锁定
+}
+
+// 考勤月报类型
+export interface AttendanceMonthlyReport {
+  id: number;
+  employeeId: number;
+  employee: Employee;
+  reportMonth: string;
+  employeeNo: string;
+  realName: string;
+  nickname?: string;
+  
+  // 出勤统计
+  expectedWorkingDays: number;
+  actualWorkingDays: number;
+  legalHolidayDays: number;
+  absentDays: number;
+  
+  // 各种假期天数
+  personalLeaveDays: number;
+  annualLeaveDays: number;
+  compensatoryLeaveDays: number;
+  sickLeaveDays: number;
+  breastfeedingLeaveDays: number;
+  prenatalCheckupLeaveDays: number;
+  childcareLeaveDays: number;
+  marriageLeaveDays: number;
+  paternityLeaveDays: number;
+  maternityLeaveDays: number;
+  bereavementLeaveDays: number;
+  workInjuryLeaveDays: number;
+  homeVisitLeaveDays: number;
+  
+  // 考勤时间统计
+  totalLateMinutes: number;
+  totalEarlyLeaveMinutes: number;
+  makeupCardCount: number;
+  weekendOvertimeHours: number;
+  legalHolidayOvertimeHours: number;
+  
+  // 补贴信息
+  businessTripNightAllowance: number;
+  workingDayDutyAllowance: number;
+  
+  // 流程管理
+  confirmationStatus: MonthlyReportStatus;
+  confirmationInitiatedAt?: string;
+  confirmationCompletedAt?: string;
+  confirmedBy?: number;
+  lastCalculatedAt?: string;
+  
+  // 其他信息
+  remark?: string;
+  calculationSnapshot?: Record<string, any>;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 查询月报参数
+export interface QueryMonthlyReportParams {
+  page?: number;
+  pageSize?: number;
+  employeeId?: number;
+  reportMonth?: string;
+  confirmationStatus?: MonthlyReportStatus;
+}
+
+// 月报计算参数
+export interface CalculateMonthlyReportParams {
+  employeeId?: number;
+  reportMonth: string;
+}
+
+// 批量确认月报参数
+export interface BatchConfirmMonthlyReportParams {
+  ids: number[];
+  remark?: string;
+}
+
+// 月报统计信息
+export interface MonthlyReportStats {
+  total: number;
+  draft: number;
+  pending: number;
+  confirmed: number;
+  rejected: number;
+  locked: number;
+  confirmationRate: string;
+}
+
 // 表格列配置
 export interface TableColumn {
   key: string;

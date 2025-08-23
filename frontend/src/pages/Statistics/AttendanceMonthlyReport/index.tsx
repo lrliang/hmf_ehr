@@ -33,84 +33,60 @@ import { Helmet } from 'react-helmet-async';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { attendanceApi } from '@/services';
-import { AttendanceResult } from '@/types';
+import type { 
+  AttendanceMonthlyReport, 
+  QueryMonthlyReportParams
+} from '@/types';
+import { MonthlyReportStatus } from '@/types';
 
 const { Title } = Typography;
 const { MonthPicker } = DatePicker;
 const { Option } = Select;
 
-// 月报数据接口定义
-interface MonthlyReportRecord {
-  employeeId: number;
-  employeeName: string;
-  employeeNo: string;
-  department?: string;
-  position?: string;
-  totalDays: number;           // 应出勤天数
-  actualDays: number;          // 实际出勤天数
-  normalDays: number;          // 正常出勤天数
-  lateDays: number;           // 迟到天数
-  earlyLeaveDays: number;     // 早退天数
-  absentDays: number;         // 缺勤天数
-  overtimeDays: number;       // 加班天数
-  manualDays: number;         // 补签天数
-  attendanceRate: number;     // 出勤率
-  punctualityRate: number;    // 准时率
-  totalWorkHours: number;     // 总工作时长
-  overtimeHours: number;      // 加班时长
+// 统计信息接口
+interface MonthlyStatistics {
+  totalEmployees: number;
+  averageAttendanceRate: number;
+  totalAbsentDays: number;
+  totalOvertimeHours: number;
+  totalLateMinutes: number;
+  totalEarlyLeaveMinutes: number;
 }
 
-// 查询参数接口
-interface QueryMonthlyReportParams {
-  year: number;
-  month: number;
-  employeeName?: string;
-  department?: string;
-}
+// 获取状态颜色
+const getStatusColor = (status: MonthlyReportStatus) => {
+  switch (status) {
+    case MonthlyReportStatus.DRAFT:
+      return 'default';
+    case MonthlyReportStatus.PENDING:
+      return 'processing';
+    case MonthlyReportStatus.CONFIRMED:
+      return 'success';
+    case MonthlyReportStatus.REJECTED:
+      return 'error';
+    case MonthlyReportStatus.LOCKED:
+      return 'warning';
+    default:
+      return 'default';
+  }
+};
 
-// 模拟数据
-const generateMockData = (params: QueryMonthlyReportParams): MonthlyReportRecord[] => {
-  const mockData: MonthlyReportRecord[] = [];
-  const employees = [
-    { id: 1, name: '张三', no: 'E001', department: '烘焙部', position: '烘焙师' },
-    { id: 2, name: '李四', no: 'E002', department: '销售部', position: '店员' },
-    { id: 3, name: '王五', no: 'E003', department: '管理部', position: '店长' },
-    { id: 4, name: '赵六', no: 'E004', department: '烘焙部', position: '学徒' },
-    { id: 5, name: '钱七', no: 'E005', department: '销售部', position: '收银员' },
-  ];
-
-  employees.forEach(emp => {
-    const totalDays = 22; // 假设月工作日为22天
-    const actualDays = Math.floor(Math.random() * 3) + 20; // 20-22天
-    const lateDays = Math.floor(Math.random() * 3);
-    const earlyLeaveDays = Math.floor(Math.random() * 2);
-    const absentDays = totalDays - actualDays;
-    const normalDays = actualDays - lateDays - earlyLeaveDays;
-    const overtimeDays = Math.floor(Math.random() * 5);
-    const manualDays = Math.floor(Math.random() * 2);
-
-    mockData.push({
-      employeeId: emp.id,
-      employeeName: emp.name,
-      employeeNo: emp.no,
-      department: emp.department,
-      position: emp.position,
-      totalDays,
-      actualDays,
-      normalDays,
-      lateDays,
-      earlyLeaveDays,
-      absentDays,
-      overtimeDays,
-      manualDays,
-      attendanceRate: Math.round((actualDays / totalDays) * 100),
-      punctualityRate: Math.round((normalDays / actualDays) * 100),
-      totalWorkHours: actualDays * 8 + overtimeDays * 2,
-      overtimeHours: overtimeDays * 2,
-    });
-  });
-
-  return mockData;
+// 获取状态文本
+const getStatusText = (status: MonthlyReportStatus) => {
+  switch (status) {
+    case MonthlyReportStatus.DRAFT:
+      return '草稿';
+    case MonthlyReportStatus.PENDING:
+      return '待确认';
+    case MonthlyReportStatus.CONFIRMED:
+      return '已确认';
+    case MonthlyReportStatus.REJECTED:
+      return '已拒绝';
+    case MonthlyReportStatus.LOCKED:
+      return '已锁定';
+    default:
+      return status;
+  }
 };
 
 const AttendanceMonthlyReport: React.FC = () => {
@@ -118,55 +94,72 @@ const AttendanceMonthlyReport: React.FC = () => {
   
   // 状态管理
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<MonthlyReportRecord[]>([]);
-  const [statistics, setStatistics] = useState({
+  const [data, setData] = useState<AttendanceMonthlyReport[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  });
+  const [statistics, setStatistics] = useState<MonthlyStatistics>({
     totalEmployees: 0,
     averageAttendanceRate: 0,
-    averagePunctualityRate: 0,
     totalAbsentDays: 0,
     totalOvertimeHours: 0,
+    totalLateMinutes: 0,
+    totalEarlyLeaveMinutes: 0,
   });
 
   // 搜索参数
   const [searchParams, setSearchParams] = useState<QueryMonthlyReportParams>({
-    year: dayjs().year(),
-    month: dayjs().month() + 1,
+    page: 1,
+    pageSize: 20,
+    reportMonth: dayjs().subtract(1, 'month').format('YYYY-MM'),
   });
 
   // 加载数据
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 这里应该调用真实的API，现在使用模拟数据
-      // const result = await attendanceApi.getMonthlyReport(searchParams);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟网络延迟
+      // 调用真实API获取月报数据
+      const result = await attendanceApi.getMonthlyReports(searchParams);
+      setData(result.data);
       
-      const result = generateMockData(searchParams);
-      setData(result);
+      // 更新分页信息
+      setPagination({
+        page: result.page,
+        pageSize: result.limit,
+        total: result.total,
+      });
       
       // 计算统计数据
-      const stats = result.reduce((acc, record) => {
+      const stats = result.data.reduce((acc, record) => {
         acc.totalEmployees++;
-        acc.averageAttendanceRate += record.attendanceRate;
-        acc.averagePunctualityRate += record.punctualityRate;
+        // 计算出勤率
+        const attendanceRate = record.expectedWorkingDays > 0 
+          ? Math.round((record.actualWorkingDays / record.expectedWorkingDays) * 100) 
+          : 0;
+        acc.averageAttendanceRate += attendanceRate;
         acc.totalAbsentDays += record.absentDays;
-        acc.totalOvertimeHours += record.overtimeHours;
+        acc.totalOvertimeHours += (record.weekendOvertimeHours + record.legalHolidayOvertimeHours);
+        acc.totalLateMinutes += record.totalLateMinutes;
+        acc.totalEarlyLeaveMinutes += record.totalEarlyLeaveMinutes;
         return acc;
       }, {
         totalEmployees: 0,
         averageAttendanceRate: 0,
-        averagePunctualityRate: 0,
         totalAbsentDays: 0,
         totalOvertimeHours: 0,
+        totalLateMinutes: 0,
+        totalEarlyLeaveMinutes: 0,
       });
 
       if (stats.totalEmployees > 0) {
         stats.averageAttendanceRate = Math.round(stats.averageAttendanceRate / stats.totalEmployees);
-        stats.averagePunctualityRate = Math.round(stats.averagePunctualityRate / stats.totalEmployees);
       }
 
       setStatistics(stats);
     } catch (error) {
+      console.error('获取考勤月报失败:', error);
       message.error('获取考勤月报失败');
     } finally {
       setLoading(false);
@@ -180,14 +173,23 @@ const AttendanceMonthlyReport: React.FC = () => {
   // 搜索处理
   const handleSearch = (values: Record<string, unknown>) => {
     const params: QueryMonthlyReportParams = {
-      ...searchParams,
-      ...values,
+      page: 1, // 搜索时重置到第一页
+      pageSize: searchParams.pageSize,
     };
 
     // 处理日期
-    if (values.date) {
-      params.year = values.date.year();
-      params.month = values.date.month() + 1;
+    if (values.date && dayjs.isDayjs(values.date)) {
+      params.reportMonth = values.date.format('YYYY-MM');
+    }
+
+    // 处理员工ID
+    if (values.employeeId) {
+      params.employeeId = Number(values.employeeId);
+    }
+
+    // 处理确认状态
+    if (values.confirmationStatus) {
+      params.confirmationStatus = values.confirmationStatus as MonthlyReportStatus;
     }
 
     setSearchParams(params);
@@ -196,19 +198,73 @@ const AttendanceMonthlyReport: React.FC = () => {
   // 重置搜索
   const handleReset = () => {
     form.resetFields();
+    const resetParams: QueryMonthlyReportParams = {
+      page: 1,
+      pageSize: 20,
+      reportMonth: dayjs().subtract(1, 'month').format('YYYY-MM'),
+    };
+    setSearchParams(resetParams);
+  };
+
+  // 分页处理
+  const handleTableChange = (page: number, pageSize: number) => {
     setSearchParams({
-      year: dayjs().year(),
-      month: dayjs().month() + 1,
+      ...searchParams,
+      page,
+      pageSize,
     });
   };
 
   // 导出数据
   const handleExport = async () => {
     try {
-      message.success('导出功能开发中...');
-      // 这里实现导出逻辑
+      const blob = await attendanceApi.exportMonthlyReports(searchParams);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `考勤月报_${searchParams.reportMonth || dayjs().format('YYYY-MM')}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      message.success('导出成功');
     } catch (error) {
+      console.error('导出失败:', error);
       message.error('导出失败');
+    }
+  };
+
+  // 手动计算月报
+  const handleCalculateReport = async (reportMonth?: string) => {
+    try {
+      const month = reportMonth || searchParams.reportMonth;
+      if (!month) {
+        message.error('请选择月份');
+        return;
+      }
+      
+      await attendanceApi.calculateMonthlyReport({ reportMonth: month });
+      message.success('月报计算已触发，请稍后刷新查看结果');
+      
+      // 延迟刷新数据
+      setTimeout(() => {
+        loadData();
+      }, 2000);
+    } catch (error) {
+      console.error('触发月报计算失败:', error);
+      message.error('触发月报计算失败');
+    }
+  };
+
+  // 确认月报
+  const handleConfirm = async (id: number, remark?: string) => {
+    try {
+      await attendanceApi.confirmMonthlyReport(id, { remark });
+      message.success('月报确认成功');
+      loadData();
+    } catch (error) {
+      console.error('确认月报失败:', error);
+      message.error('确认月报失败');
     }
   };
 
@@ -221,135 +277,206 @@ const AttendanceMonthlyReport: React.FC = () => {
   };
 
   // 表格列定义
-  const columns: ColumnsType<MonthlyReportRecord> = [
+  const columns: ColumnsType<AttendanceMonthlyReport> = [
     {
       title: '员工信息',
       key: 'employee',
-      width: 120,
+      width: 140,
       fixed: 'left',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 'bold' }}>{record.employeeName}</div>
+          <div style={{ fontWeight: 'bold' }}>{record.realName}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>{record.employeeNo}</div>
-          <div style={{ fontSize: '12px', color: '#999' }}>{record.position}</div>
+          {record.nickname && (
+            <div style={{ fontSize: '12px', color: '#999' }}>({record.nickname})</div>
+          )}
         </div>
       ),
     },
     {
-      title: '部门',
-      dataIndex: 'department',
-      key: 'department',
+      title: '报告月份',
+      dataIndex: 'reportMonth',
+      key: 'reportMonth',
       width: 100,
+      align: 'center',
     },
     {
       title: '应出勤',
-      dataIndex: 'totalDays',
-      key: 'totalDays',
+      dataIndex: 'expectedWorkingDays',
+      key: 'expectedWorkingDays',
       width: 80,
       align: 'center',
       render: (days) => <Tag color="blue">{days}天</Tag>,
     },
     {
       title: '实际出勤',
-      dataIndex: 'actualDays',
-      key: 'actualDays',
+      dataIndex: 'actualWorkingDays',
+      key: 'actualWorkingDays',
       width: 80,
       align: 'center',
       render: (days) => <Tag color="green">{days}天</Tag>,
     },
     {
       title: '出勤率',
-      dataIndex: 'attendanceRate',
       key: 'attendanceRate',
       width: 100,
       align: 'center',
-      render: (rate) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Progress 
-            type="circle" 
-            size={40} 
-            percent={rate} 
-            strokeColor={getAttendanceRateColor(rate)}
-            format={(percent) => `${percent}%`}
-          />
-        </div>
-      ),
-      sorter: (a, b) => a.attendanceRate - b.attendanceRate,
+      render: (_, record) => {
+        const rate = record.expectedWorkingDays > 0 
+          ? Math.round((record.actualWorkingDays / record.expectedWorkingDays) * 100) 
+          : 0;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Progress 
+              type="circle" 
+              size={40} 
+              percent={rate} 
+              strokeColor={getAttendanceRateColor(rate)}
+              format={(percent) => `${percent}%`}
+            />
+          </div>
+        );
+      },
+      sorter: (a, b) => {
+        const rateA = a.expectedWorkingDays > 0 ? (a.actualWorkingDays / a.expectedWorkingDays) * 100 : 0;
+        const rateB = b.expectedWorkingDays > 0 ? (b.actualWorkingDays / b.expectedWorkingDays) * 100 : 0;
+        return rateA - rateB;
+      },
     },
     {
-      title: '正常出勤',
-      dataIndex: 'normalDays',
-      key: 'normalDays',
-      width: 80,
-      align: 'center',
-      render: (days) => days > 0 ? <Tag color="green">{days}天</Tag> : <Tag>0天</Tag>,
-    },
-    {
-      title: '迟到',
-      dataIndex: 'lateDays',
-      key: 'lateDays',
-      width: 60,
-      align: 'center',
-      render: (days) => days > 0 ? <Tag color="orange">{days}天</Tag> : <Tag>0天</Tag>,
-    },
-    {
-      title: '早退',
-      dataIndex: 'earlyLeaveDays',
-      key: 'earlyLeaveDays',
-      width: 60,
-      align: 'center',
-      render: (days) => days > 0 ? <Tag color="red">{days}天</Tag> : <Tag>0天</Tag>,
-    },
-    {
-      title: '缺勤',
+      title: '缺勤天数',
       dataIndex: 'absentDays',
       key: 'absentDays',
-      width: 60,
+      width: 80,
       align: 'center',
       render: (days) => days > 0 ? <Tag color="red">{days}天</Tag> : <Tag>0天</Tag>,
     },
     {
-      title: '加班',
-      dataIndex: 'overtimeDays',
-      key: 'overtimeDays',
-      width: 60,
-      align: 'center',
-      render: (days) => days > 0 ? <Tag color="blue">{days}天</Tag> : <Tag>0天</Tag>,
-    },
-    {
-      title: '补签',
-      dataIndex: 'manualDays',
-      key: 'manualDays',
-      width: 60,
-      align: 'center',
-      render: (days) => days > 0 ? <Tag color="purple">{days}天</Tag> : <Tag>0天</Tag>,
-    },
-    {
-      title: '准时率',
-      dataIndex: 'punctualityRate',
-      key: 'punctualityRate',
-      width: 80,
-      align: 'center',
-      render: (rate) => (
-        <Tag color={rate >= 90 ? 'green' : rate >= 80 ? 'orange' : 'red'}>
-          {rate}%
-        </Tag>
-      ),
-    },
-    {
-      title: '工作时长',
-      key: 'workHours',
+      title: '迟到时长',
+      dataIndex: 'totalLateMinutes',
+      key: 'totalLateMinutes',
       width: 100,
       align: 'center',
-      render: (_, record) => (
-        <div>
-          <div>{record.totalWorkHours}h</div>
-          {record.overtimeHours > 0 && (
-            <div style={{ fontSize: '12px', color: '#1890ff' }}>
-              加班 {record.overtimeHours}h
+      render: (minutes) => {
+        if (minutes > 0) {
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          return (
+            <Tooltip title={`总计${minutes}分钟`}>
+              <Tag color="orange">
+                {hours > 0 ? `${hours}h${mins}m` : `${mins}m`}
+              </Tag>
+            </Tooltip>
+          );
+        }
+        return <Tag>0</Tag>;
+      },
+    },
+    {
+      title: '早退时长',
+      dataIndex: 'totalEarlyLeaveMinutes',
+      key: 'totalEarlyLeaveMinutes',
+      width: 100,
+      align: 'center',
+      render: (minutes) => {
+        if (minutes > 0) {
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          return (
+            <Tooltip title={`总计${minutes}分钟`}>
+              <Tag color="red">
+                {hours > 0 ? `${hours}h${mins}m` : `${mins}m`}
+              </Tag>
+            </Tooltip>
+          );
+        }
+        return <Tag>0</Tag>;
+      },
+    },
+    {
+      title: '补卡次数',
+      dataIndex: 'makeupCardCount',
+      key: 'makeupCardCount',
+      width: 80,
+      align: 'center',
+      render: (count) => count > 0 ? <Tag color="purple">{count}次</Tag> : <Tag>0次</Tag>,
+    },
+    {
+      title: '加班时长',
+      key: 'overtimeHours',
+      width: 120,
+      align: 'center',
+      render: (_, record) => {
+        const weekendHours = Number(record.weekendOvertimeHours || 0);
+        const legalHours = Number(record.legalHolidayOvertimeHours || 0);
+        const total = weekendHours + legalHours;
+        return (
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+              {total.toFixed(1)}h
             </div>
+            {weekendHours > 0 && (
+              <div style={{ fontSize: '12px', color: '#1890ff' }}>
+                周末: {weekendHours.toFixed(1)}h
+              </div>
+            )}
+            {legalHours > 0 && (
+              <div style={{ fontSize: '12px', color: '#f50' }}>
+                节假日: {legalHours.toFixed(1)}h
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: '确认状态',
+      dataIndex: 'confirmationStatus',
+      key: 'confirmationStatus',
+      width: 100,
+      align: 'center',
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
+      ),
+      filters: [
+        { text: '草稿', value: MonthlyReportStatus.DRAFT },
+        { text: '待确认', value: MonthlyReportStatus.PENDING },
+        { text: '已确认', value: MonthlyReportStatus.CONFIRMED },
+        { text: '已拒绝', value: MonthlyReportStatus.REJECTED },
+        { text: '已锁定', value: MonthlyReportStatus.LOCKED },
+      ],
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 150,
+      align: 'center',
+      fixed: 'right',
+      render: (_, record) => (
+        <Space size="small">
+          {record.confirmationStatus === MonthlyReportStatus.DRAFT && (
+            <Button 
+              size="small" 
+              type="link" 
+              onClick={() => handleConfirm(record.id)}
+            >
+              确认
+            </Button>
           )}
-        </div>
+          <Tooltip title="查看详情">
+            <Button 
+              size="small" 
+              type="link" 
+              icon={<FileTextOutlined />}
+              onClick={() => {
+                // 查看详情逻辑
+                message.info('查看详情功能开发中');
+              }}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -367,7 +494,7 @@ const AttendanceMonthlyReport: React.FC = () => {
 
         {/* 统计卡片 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8} lg={6}>
             <Card size="small">
               <Statistic
                 title="总员工数"
@@ -376,7 +503,7 @@ const AttendanceMonthlyReport: React.FC = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8} lg={6}>
             <Card size="small">
               <Statistic
                 title="平均出勤率"
@@ -387,18 +514,7 @@ const AttendanceMonthlyReport: React.FC = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card size="small">
-              <Statistic
-                title="平均准时率"
-                value={statistics.averagePunctualityRate}
-                suffix="%"
-                valueStyle={{ color: statistics.averagePunctualityRate >= 90 ? '#52c41a' : '#fa8c16' }}
-                prefix={<ClockCircleOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8} lg={6}>
             <Card size="small">
               <Statistic
                 title="总缺勤天数"
@@ -406,6 +522,17 @@ const AttendanceMonthlyReport: React.FC = () => {
                 suffix="天"
                 valueStyle={{ color: '#f5222d' }}
                 prefix={<ExclamationCircleOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Card size="small">
+              <Statistic
+                title="总加班时长"
+                value={Number(statistics.totalOvertimeHours || 0).toFixed(1)}
+                suffix="h"
+                valueStyle={{ color: '#1890ff' }}
+                prefix={<ClockCircleOutlined />}
               />
             </Card>
           </Col>
@@ -428,29 +555,28 @@ const AttendanceMonthlyReport: React.FC = () => {
                 style={{ width: 120 }}
               />
             </Form.Item>
-            <Form.Item name="employeeName" label="员工姓名">
+            <Form.Item name="employeeId" label="员工">
               <Select 
                 placeholder="选择员工" 
                 allowClear
                 style={{ width: 140 }}
                 showSearch
+                optionFilterProp="children"
               >
-                <Option value="张三">张三</Option>
-                <Option value="李四">李四</Option>
-                <Option value="王五">王五</Option>
-                <Option value="赵六">赵六</Option>
-                <Option value="钱七">钱七</Option>
+                {/* 这里应该从API获取员工列表，暂时留空 */}
               </Select>
             </Form.Item>
-            <Form.Item name="department" label="部门">
+            <Form.Item name="confirmationStatus" label="确认状态">
               <Select 
-                placeholder="选择部门" 
+                placeholder="选择状态" 
                 allowClear
                 style={{ width: 120 }}
               >
-                <Option value="烘焙部">烘焙部</Option>
-                <Option value="销售部">销售部</Option>
-                <Option value="管理部">管理部</Option>
+                <Option value={MonthlyReportStatus.DRAFT}>草稿</Option>
+                <Option value={MonthlyReportStatus.PENDING}>待确认</Option>
+                <Option value={MonthlyReportStatus.CONFIRMED}>已确认</Option>
+                <Option value={MonthlyReportStatus.REJECTED}>已拒绝</Option>
+                <Option value={MonthlyReportStatus.LOCKED}>已锁定</Option>
               </Select>
             </Form.Item>
             <Form.Item>
@@ -460,6 +586,9 @@ const AttendanceMonthlyReport: React.FC = () => {
                 </Button>
                 <Button onClick={handleReset} icon={<ReloadOutlined />}>
                   重置
+                </Button>
+                <Button type="default" onClick={() => handleCalculateReport()} icon={<CalendarOutlined />}>
+                  计算月报
                 </Button>
                 <Button onClick={handleExport} icon={<ExportOutlined />}>
                   导出
@@ -476,19 +605,26 @@ const AttendanceMonthlyReport: React.FC = () => {
               <Table
                 columns={columns}
                 dataSource={data}
-                rowKey="employeeId"
-                scroll={{ x: 1200 }}
+                rowKey="id"
+                scroll={{ x: 1400 }}
                 pagination={{
+                  current: pagination.page,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
                   showSizeChanger: true,
                   showQuickJumper: true,
                   showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+                  onChange: handleTableChange,
+                  onShowSizeChange: handleTableChange,
+                  pageSizeOptions: ['10', '20', '50', '100'],
                 }}
                 size="small"
               />
             ) : (
               <Empty 
-                description="暂无数据"
+                description="暂无月报数据"
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ padding: '60px 0' }}
               />
             )}
           </Spin>
