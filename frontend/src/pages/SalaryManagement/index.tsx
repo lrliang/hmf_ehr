@@ -52,7 +52,6 @@ import type {
 } from '@/types';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 // 工资状态标签配置
@@ -512,11 +511,11 @@ const SalaryManagement: React.FC = () => {
             </Form.Item>
             
             <Form.Item name="reportMonth" label="工资月份">
-              <DatePicker.MonthPicker placeholder="选择月份" />
+              <DatePicker picker="month" placeholder="选择月份" />
             </Form.Item>
             
             <Form.Item name="monthRange" label="月份范围">
-              <RangePicker.MonthPicker placeholder={['开始月份', '结束月份']} />
+              <DatePicker.RangePicker picker="month" placeholder={['开始月份', '结束月份']} />
             </Form.Item>
             
             <Form.Item name="status" label="状态">
@@ -745,7 +744,8 @@ const SalaryManagement: React.FC = () => {
               label="工资月份"
               rules={[{ required: true, message: '请选择工资月份' }]}
             >
-              <DatePicker.MonthPicker 
+              <DatePicker 
+                picker="month"
                 placeholder="选择要计算的月份"
                 style={{ width: '100%' }}
               />
