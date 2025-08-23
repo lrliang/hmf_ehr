@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 
@@ -86,6 +87,9 @@ import { SharedModule } from './shared/shared.module';
       ],
       inject: [ConfigService],
     }),
+
+    // 定时任务模块
+    ScheduleModule.forRoot(),
 
     // 共享模块
     SharedModule,

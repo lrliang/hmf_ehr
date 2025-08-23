@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { AttendanceRecord, AttendanceResult, AttendanceType } from './entities/attendance-record.entity';
@@ -23,6 +23,8 @@ export class AttendanceService {
     private readonly attendanceRecordRepository: Repository<AttendanceRecord>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
+    @Inject(forwardRef(() => require('../reports/reports.service').ReportsService))
+    private readonly reportsService?: any, // 使用any避免循环依赖的类型问题
   ) {}
 
   /**
@@ -306,6 +308,14 @@ export class AttendanceService {
       // 批量保存有效记录
       if (validRecords.length > 0) {
         await this.attendanceRecordRepository.save(validRecords);
+
+        // 触发考勤日报计算
+        if (this.reportsService) {
+          this.triggerDailyReportCalculation(validRecords).catch(error => {
+            // 日报计算失败不影响导入流程，只记录日志
+            console.warn('考勤导入后触发日报计算失败:', error.message);
+          });
+        }
       }
 
       result.duration = Date.now() - startTime;
@@ -461,5 +471,38 @@ export class AttendanceService {
     });
 
     return attendanceRecord;
+  }
+
+  /**
+   * 触发考勤日报计算（异步执行）
+   */
+  private async triggerDailyReportCalculation(records: AttendanceRecord[]): Promise<void> {
+    if (!this.reportsService) {
+      return;
+    }
+
+    try {
+      // 获取涉及的日期和员工ID
+      const dateEmployeeMap = new Map<string, Set<number>>();
+      
+      for (const record of records) {
+        const dateKey = record.attendanceDate.toDateString();
+        if (!dateEmployeeMap.has(dateKey)) {
+          dateEmployeeMap.set(dateKey, new Set<number>());
+        }
+        dateEmployeeMap.get(dateKey)!.add(record.employeeId);
+      }
+
+      // 为每个日期触发计算
+      for (const [dateStr, employeeIds] of dateEmployeeMap) {
+        const date = new Date(dateStr);
+        await this.reportsService.triggerCalculationForDate(date, Array.from(employeeIds));
+      }
+
+      console.log(`已触发 ${dateEmployeeMap.size} 个日期的考勤日报计算`);
+    } catch (error) {
+      console.error('触发考勤日报计算失败:', error);
+      throw error;
+    }
   }
 }
