@@ -49,8 +49,15 @@ const menuItems: MenuItem[] = [
     key: '/attendance',
     label: '考勤管理',
     icon: <ClockCircleOutlined />,
-    path: '/attendance',
     permission: ['attendance:view'],
+    children: [
+      {
+        key: '/attendance/records',
+        label: '打卡明细',
+        path: '/attendance/records',
+        permission: ['attendance:view'],
+      },
+    ],
   },
   {
     key: '/leave',
@@ -74,11 +81,18 @@ const menuItems: MenuItem[] = [
     permission: ['salary:view'],
   },
   {
-    key: '/reports',
-    label: '报表统计',
+    key: '/statistics',
+    label: '统计分析',
     icon: <BarChartOutlined />,
-    path: '/reports',
     permission: ['report:view'],
+    children: [
+      {
+        key: '/statistics/attendance-monthly',
+        label: '考勤月报',
+        path: '/statistics/attendance-monthly',
+        permission: ['report:view'],
+      },
+    ],
   },
 ];
 
@@ -94,8 +108,38 @@ const Layout: React.FC = () => {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  // 获取当前选中的菜单
+  // 获取当前选中的菜单和展开的菜单
   const selectedKeys = [location.pathname];
+  const [openKeys, setOpenKeys] = React.useState<string[]>(() => {
+    const keys: string[] = [];
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length > 2) {
+      // 如果是子路由，展开父菜单
+      const parentPath = `/${pathParts[1]}`;
+      keys.push(parentPath);
+    }
+    return keys;
+  });
+
+  // 处理菜单展开/收起
+  const handleOpenChange = (keys: string[]) => {
+    setOpenKeys(keys);
+  };
+
+  // 路由变化时更新展开状态
+  React.useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length > 2) {
+      // 如果是子路由，确保父菜单展开
+      const parentPath = `/${pathParts[1]}`;
+      setOpenKeys(prevKeys => {
+        if (!prevKeys.includes(parentPath)) {
+          return [...prevKeys, parentPath];
+        }
+        return prevKeys;
+      });
+    }
+  }, [location.pathname]);
 
   // 生成面包屑
   const getBreadcrumbItems = () => {
@@ -105,9 +149,26 @@ const Layout: React.FC = () => {
     let currentPath = '';
     pathSegments.forEach(segment => {
       currentPath += `/${segment}`;
+      
+      // 查找主菜单
       const menuItem = menuItems.find(item => item.path === currentPath);
       if (menuItem) {
         items.push({ title: menuItem.label });
+      } else {
+        // 查找子菜单
+        for (const parent of menuItems) {
+          if (parent.children) {
+            const childItem = parent.children.find(child => child.path === currentPath);
+            if (childItem) {
+              // 如果还没有添加父级菜单，先添加父级
+              if (!items.find(item => item.title === parent.label)) {
+                items.push({ title: parent.label });
+              }
+              items.push({ title: childItem.label });
+              break;
+            }
+          }
+        }
       }
     });
     
@@ -116,7 +177,25 @@ const Layout: React.FC = () => {
 
   // 处理菜单点击
   const handleMenuClick = ({ key }: { key: string }) => {
-    navigate(key);
+    // 查找菜单项
+    const findMenuItemByKey = (items: MenuItem[], targetKey: string): MenuItem | null => {
+      for (const item of items) {
+        if (item.key === targetKey) {
+          return item;
+        }
+        if (item.children) {
+          const found = findMenuItemByKey(item.children, targetKey);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const menuItem = findMenuItemByKey(menuItems, key);
+    // 只有有path属性的菜单项才进行导航
+    if (menuItem && menuItem.path) {
+      navigate(menuItem.path);
+    }
   };
 
   // 处理用户菜单点击
@@ -178,11 +257,17 @@ const Layout: React.FC = () => {
           theme="dark"
           mode="inline"
           selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          onOpenChange={handleOpenChange}
           onClick={handleMenuClick}
           items={menuItems.map(item => ({
             key: item.key,
             icon: item.icon,
             label: item.label,
+            children: item.children?.map(child => ({
+              key: child.key,
+              label: child.label,
+            })),
           }))}
         />
       </Sider>

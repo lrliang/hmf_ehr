@@ -14,10 +14,12 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeManagement = React.lazy(() => import('./pages/EmployeeManagement'));
 const AttendanceManagement = React.lazy(() => import('./pages/AttendanceManagement'));
+const AttendanceRecords = React.lazy(() => import('./pages/AttendanceManagement/AttendanceRecords'));
 const LeaveManagement = React.lazy(() => import('./pages/LeaveManagement'));
 const GoalManagement = React.lazy(() => import('./pages/GoalManagement'));
 const SalaryManagement = React.lazy(() => import('./pages/SalaryManagement'));
-const ReportManagement = React.lazy(() => import('./pages/ReportManagement'));
+const Statistics = React.lazy(() => import('./pages/Statistics'));
+const AttendanceMonthlyReport = React.lazy(() => import('./pages/Statistics/AttendanceMonthlyReport'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
@@ -57,7 +59,9 @@ function App() {
             <Route path="employees" element={<EmployeeManagement />} />
             
             {/* 考勤管理 */}
-            <Route path="attendance" element={<AttendanceManagement />} />
+            <Route path="attendance" element={<AttendanceManagement />}>
+              <Route path="records" element={<AttendanceRecords />} />
+            </Route>
             
             {/* 请假管理 */}
             <Route path="leave" element={<LeaveManagement />} />
@@ -68,8 +72,10 @@ function App() {
             {/* 薪酬管理 */}
             <Route path="salary" element={<SalaryManagement />} />
             
-            {/* 报表管理 */}
-            <Route path="reports" element={<ReportManagement />} />
+            {/* 统计分析 */}
+            <Route path="statistics" element={<Statistics />}>
+              <Route path="attendance-monthly" element={<AttendanceMonthlyReport />} />
+            </Route>
             
             {/* 个人中心 */}
             <Route path="profile" element={<Profile />} />
