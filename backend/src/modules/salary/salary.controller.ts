@@ -231,20 +231,23 @@ export class SalaryController {
 
     const result = await this.salaryService.findAll(queryDto);
     
+    // 确保 result.data 存在，如果不存在则使用空数组
+    const items = result?.data || [];
+    
     const statistics = {
       reportMonth,
-      totalEmployees: result.items.length,
-      totalGrossSalary: result.items.reduce((sum, item) => sum + (item.grossSalary || 0), 0),
-      totalNetSalary: result.items.reduce((sum, item) => sum + (item.netSalary || 0), 0),
-      totalSocialInsurance: result.items.reduce((sum, item) => sum + (item.socialInsurance || 0), 0),
-      totalHousingFund: result.items.reduce((sum, item) => sum + (item.housingFund || 0), 0),
-      totalIncomeTax: result.items.reduce((sum, item) => sum + (item.incomeTax || 0), 0),
+      totalEmployees: items.length,
+      totalGrossSalary: items.reduce((sum, item) => sum + (item.grossSalary || 0), 0),
+      totalNetSalary: items.reduce((sum, item) => sum + (item.netSalary || 0), 0),
+      totalSocialInsurance: items.reduce((sum, item) => sum + (item.socialInsurance || 0), 0),
+      totalHousingFund: items.reduce((sum, item) => sum + (item.housingFund || 0), 0),
+      totalIncomeTax: items.reduce((sum, item) => sum + (item.incomeTax || 0), 0),
       statusDistribution: {
-        draft: result.items.filter(item => item.status === 'draft').length,
-        calculated: result.items.filter(item => item.status === 'calculated').length,
-        confirmed: result.items.filter(item => item.status === 'confirmed').length,
-        paid: result.items.filter(item => item.status === 'paid').length,
-        cancelled: result.items.filter(item => item.status === 'cancelled').length,
+        draft: items.filter(item => item.status === 'draft').length,
+        calculated: items.filter(item => item.status === 'calculated').length,
+        confirmed: items.filter(item => item.status === 'confirmed').length,
+        paid: items.filter(item => item.status === 'paid').length,
+        cancelled: items.filter(item => item.status === 'cancelled').length,
       }
     };
 
