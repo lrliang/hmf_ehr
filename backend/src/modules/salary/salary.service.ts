@@ -406,19 +406,19 @@ export class SalaryService {
         reportMonth,
         employeeNo: employee.employeeNo,
         employeeName: employee.name,
-        expectedWorkingDays: calculationResult.expectedWorkingDays,
-        actualWorkingDays: calculationResult.actualWorkingDays,
-        baseSalary: calculationResult.baseSalary,
-        attendanceSalary: calculationResult.attendanceSalary,
-        personalLeaveDeduction: calculationResult.personalLeaveDeduction,
-        allowanceAndBonus: calculationResult.allowanceAndBonus,
-        grossSalary: calculationResult.grossSalary,
+        expectedWorkingDays: this.cleanNumericValue(calculationResult.expectedWorkingDays),
+        actualWorkingDays: this.cleanNumericValue(calculationResult.actualWorkingDays),
+        baseSalary: this.cleanNumericValue(calculationResult.baseSalary),
+        attendanceSalary: this.cleanNumericValue(calculationResult.attendanceSalary),
+        personalLeaveDeduction: this.cleanNumericValue(calculationResult.personalLeaveDeduction),
+        allowanceAndBonus: this.cleanNumericValue(calculationResult.allowanceAndBonus),
+        grossSalary: this.cleanNumericValue(calculationResult.grossSalary),
         socialInsurance: 0, // 社保计算逻辑需要根据具体规则实现
         housingFund: 0, // 公积金计算逻辑需要根据具体规则实现
         incomeTax: 0, // 个税计算逻辑需要根据具体规则实现
         mealFee: 0, // 伙食费需要根据具体规则设置
         otherDeductions: 0,
-        netSalary: calculationResult.grossSalary, // 简化处理，实际需要扣减社保、公积金、个税等
+        netSalary: this.cleanNumericValue(calculationResult.grossSalary), // 简化处理，实际需要扣减社保、公积金、个税等
         status: SalaryDetailStatus.CALCULATED,
         calculatedAt: new Date(),
         calculationSnapshot: {
@@ -427,15 +427,15 @@ export class SalaryService {
             id: employee.id,
             employeeNo: employee.employeeNo,
             name: employee.name,
-            baseSalary: employee.baseSalary
+            baseSalary: this.cleanNumericValue(employee.baseSalary)
           },
           monthlyReport: {
             id: monthlyReport.id,
-            expectedWorkingDays: monthlyReport.expectedWorkingDays,
-            actualWorkingDays: monthlyReport.actualWorkingDays,
-            personalLeaveDays: monthlyReport.personalLeaveDays,
-            weekendOvertimeHours: monthlyReport.weekendOvertimeHours,
-            legalHolidayOvertimeHours: monthlyReport.legalHolidayOvertimeHours
+            expectedWorkingDays: this.cleanNumericValue(monthlyReport.expectedWorkingDays),
+            actualWorkingDays: this.cleanNumericValue(monthlyReport.actualWorkingDays),
+            personalLeaveDays: this.cleanNumericValue(monthlyReport.personalLeaveDays),
+            weekendOvertimeHours: this.cleanNumericValue(monthlyReport.weekendOvertimeHours),
+            legalHolidayOvertimeHours: this.cleanNumericValue(monthlyReport.legalHolidayOvertimeHours)
           }
         }
       };
