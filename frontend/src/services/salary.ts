@@ -6,7 +6,6 @@ import type {
   UpdateSalaryDetailParams,
   CalculateSalaryParams,
   BatchCalculateSalaryParams,
-  SalaryCalculationResult,
   BatchSalaryCalculationResult,
   SalaryStatistics,
   PaginatedResult
