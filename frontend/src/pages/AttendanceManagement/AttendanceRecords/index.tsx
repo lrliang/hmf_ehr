@@ -292,8 +292,9 @@ const AttendanceRecords: React.FC = () => {
       if (result.failed > 0) {
         message.warning(`${result.failed} 条记录导入失败，请查看错误详情`);
       }
-    } catch (error: any) {
-      message.error(`导入失败: ${error.message || '未知错误'}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      message.error(`导入失败: ${errorMessage}`);
     } finally {
       setImporting(false);
     }

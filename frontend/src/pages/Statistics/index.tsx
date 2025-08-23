@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Card, Menu, Typography } from 'antd';
 import { Helmet } from 'react-helmet-async';
-import { BarChartOutlined, CalendarOutlined, UserOutlined } from '@ant-design/icons';
+import { CalendarOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 

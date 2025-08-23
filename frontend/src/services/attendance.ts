@@ -65,20 +65,7 @@ export const attendanceApi = {
     });
   },
 
-  // 导入打卡数据
-  importAttendanceRecords: (file: File): Promise<{
-    success: number;
-    failed: number;
-    errors?: Array<{ row: number; message: string }>;
-  }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return request.post('/attendance/records/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  },
+
 
   // 获取考勤汇总数据（按日期范围）
   getAttendanceSummary: (params: {
