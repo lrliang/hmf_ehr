@@ -3,6 +3,7 @@ export { authApi } from './auth';
 export { userApi } from './user';
 export { employeeApi } from './employee';
 export { attendanceApi } from './attendance';
+export { salaryApi } from './salary';
 
 // 导出请求实例和工具函数
 export { default as request, createCancelToken, isCancel } from './request';

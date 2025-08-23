@@ -264,6 +264,168 @@ export interface SalaryRecord {
   updatedAt: string;
 }
 
+// 工资详情状态枚举
+export enum SalaryDetailStatus {
+  DRAFT = 'draft',           // 草稿状态
+  CALCULATED = 'calculated', // 已计算
+  CONFIRMED = 'confirmed',   // 已确认
+  PAID = 'paid',            // 已发放
+  CANCELLED = 'cancelled'    // 已取消
+}
+
+// 工资详情类型
+export interface SalaryDetail {
+  id: number;
+  employeeId: number;
+  employee: Employee;
+  attendanceMonthlyReportId?: number;
+  attendanceMonthlyReport?: AttendanceMonthlyReport;
+  reportMonth: string;
+  employeeNo: string;
+  employeeName: string;
+  
+  // 考勤数据
+  expectedWorkingDays: number;
+  actualWorkingDays: number;
+  
+  // 应发工资
+  baseSalary: number;
+  attendanceSalary: number;
+  personalLeaveDeduction: number;
+  allowanceAndBonus: number;
+  grossSalary: number;
+  
+  // 社保公积金
+  socialInsurance: number;
+  housingFund: number;
+  
+  // 所得税
+  incomeTax: number;
+  
+  // 税后扣发
+  mealFee: number;
+  otherDeductions: number;
+  
+  // 实发工资
+  netSalary: number;
+  
+  // 状态管理
+  status: SalaryDetailStatus;
+  calculatedAt?: string;
+  confirmedAt?: string;
+  confirmedBy?: number;
+  paidAt?: string;
+  paidBy?: number;
+  
+  // 其他信息
+  remark?: string;
+  calculationSnapshot?: Record<string, any>;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 查询工资详情参数
+export interface QuerySalaryDetailParams {
+  page?: number;
+  limit?: number;
+  employeeId?: number;
+  employeeNo?: string;
+  employeeName?: string;
+  reportMonth?: string;
+  status?: SalaryDetailStatus[];
+  startMonth?: string;
+  endMonth?: string;
+  confirmedBy?: number;
+  paidBy?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+// 创建工资详情参数
+export interface CreateSalaryDetailParams {
+  employeeId: number;
+  attendanceMonthlyReportId?: number;
+  reportMonth: string;
+  employeeNo: string;
+  employeeName: string;
+  expectedWorkingDays?: number;
+  actualWorkingDays?: number;
+  baseSalary?: number;
+  attendanceSalary?: number;
+  personalLeaveDeduction?: number;
+  allowanceAndBonus?: number;
+  grossSalary?: number;
+  socialInsurance?: number;
+  housingFund?: number;
+  incomeTax?: number;
+  mealFee?: number;
+  otherDeductions?: number;
+  netSalary?: number;
+  status?: SalaryDetailStatus;
+  remark?: string;
+}
+
+// 更新工资详情参数
+export interface UpdateSalaryDetailParams {
+  status?: SalaryDetailStatus;
+  confirmedBy?: number;
+  paidBy?: number;
+  remark?: string;
+}
+
+// 计算工资参数
+export interface CalculateSalaryParams {
+  reportMonth: string;
+  employeeIds?: number[];
+  forceRecalculate?: boolean;
+}
+
+// 批量计算工资参数
+export interface BatchCalculateSalaryParams {
+  reportMonths: string[];
+  employeeIds?: number[];
+  forceRecalculate?: boolean;
+}
+
+// 工资计算结果
+export interface SalaryCalculationResult {
+  employeeId: number;
+  employeeNo: string;
+  employeeName: string;
+  reportMonth: string;
+  success: boolean;
+  error?: string;
+  salaryDetailId?: number;
+}
+
+// 批量工资计算结果
+export interface BatchSalaryCalculationResult {
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  results: SalaryCalculationResult[];
+  errorSummary?: string[];
+}
+
+// 月度工资统计
+export interface SalaryStatistics {
+  reportMonth: string;
+  totalEmployees: number;
+  totalGrossSalary: number;
+  totalNetSalary: number;
+  totalSocialInsurance: number;
+  totalHousingFund: number;
+  totalIncomeTax: number;
+  statusDistribution: {
+    draft: number;
+    calculated: number;
+    confirmed: number;
+    paid: number;
+    cancelled: number;
+  };
+}
+
 // 月报确认状态枚举
 export enum MonthlyReportStatus {
   DRAFT = 'draft',           // 草稿状态
