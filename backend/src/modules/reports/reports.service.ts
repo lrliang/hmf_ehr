@@ -885,6 +885,25 @@ export class ReportsService {
   }
 
   /**
+   * 安全的数值累加函数，处理null/undefined值
+   */
+  private safeSum(values: (number | null | undefined)[]): number {
+    return values.reduce((sum, val) => {
+      const numVal = Number(val) || 0;
+      return sum + (isNaN(numVal) ? 0 : numVal);
+    }, 0);
+  }
+
+  /**
+   * 安全的数值转换函数
+   */
+  private safeNumber(value: any): number {
+    if (value === null || value === undefined) return 0;
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  }
+
+  /**
    * 从日报数据计算月报统计
    */
   private calculateMonthlyReportFromDailyReports(
@@ -908,32 +927,32 @@ export class ReportsService {
       nickname: employee.name,
       
       // 出勤统计
-      expectedWorkingDays,
+      expectedWorkingDays: this.safeNumber(expectedWorkingDays),
       actualWorkingDays: dailyReports.filter(r => !r.isAbsent).length,
-      legalHolidayDays: dailyReports.reduce((sum, r) => sum + r.legalHolidayDays, 0),
+      legalHolidayDays: this.safeSum(dailyReports.map(r => r.legalHolidayDays)),
       absentDays: dailyReports.filter(r => r.isAbsent).length,
       
       // 各种假期天数汇总
-      personalLeaveDays: dailyReports.reduce((sum, r) => sum + r.personalLeaveDays, 0),
-      annualLeaveDays: dailyReports.reduce((sum, r) => sum + r.annualLeaveDays, 0),
+      personalLeaveDays: this.safeSum(dailyReports.map(r => r.personalLeaveDays)),
+      annualLeaveDays: this.safeSum(dailyReports.map(r => r.annualLeaveDays)),
       compensatoryLeaveDays: 0, // 调休假暂时为0，需要后续完善
-      sickLeaveDays: dailyReports.reduce((sum, r) => sum + r.sickLeaveDays, 0),
+      sickLeaveDays: this.safeSum(dailyReports.map(r => r.sickLeaveDays)),
       breastfeedingLeaveDays: 0, // 哺乳假暂时为0，需要后续完善
       prenatalCheckupLeaveDays: 0, // 孕检假暂时为0，需要后续完善
-      childcareLeaveDays: dailyReports.reduce((sum, r) => sum + r.childcareLeaveDays, 0),
+      childcareLeaveDays: this.safeSum(dailyReports.map(r => r.childcareLeaveDays)),
       marriageLeaveDays: 0, // 婚假暂时为0，需要后续完善
-      paternityLeaveDays: dailyReports.reduce((sum, r) => sum + r.paternityLeaveWorkingDays, 0),
-      maternityLeaveDays: dailyReports.reduce((sum, r) => sum + r.maternityLeaveWorkingDays, 0),
-      bereavementLeaveDays: dailyReports.reduce((sum, r) => sum + r.bereavementLeaveDays, 0),
+      paternityLeaveDays: this.safeSum(dailyReports.map(r => r.paternityLeaveWorkingDays)),
+      maternityLeaveDays: this.safeSum(dailyReports.map(r => r.maternityLeaveWorkingDays)),
+      bereavementLeaveDays: this.safeSum(dailyReports.map(r => r.bereavementLeaveDays)),
       workInjuryLeaveDays: 0, // 工伤假暂时为0，需要后续完善
       homeVisitLeaveDays: 0, // 探亲假暂时为0，需要后续完善
       
       // 考勤时间统计
-      totalLateMinutes: dailyReports.reduce((sum, r) => sum + r.lateMinutes, 0),
-      totalEarlyLeaveMinutes: dailyReports.reduce((sum, r) => sum + r.earlyLeaveMinutes, 0),
-      makeupCardCount: dailyReports.reduce((sum, r) => sum + r.makeupCardCount, 0),
-      weekendOvertimeHours: dailyReports.reduce((sum, r) => sum + r.weekendOvertimeHours, 0),
-      legalHolidayOvertimeHours: dailyReports.reduce((sum, r) => sum + r.legalHolidayOvertimeHours, 0),
+      totalLateMinutes: Math.floor(this.safeSum(dailyReports.map(r => r.lateMinutes))),
+      totalEarlyLeaveMinutes: Math.floor(this.safeSum(dailyReports.map(r => r.earlyLeaveMinutes))),
+      makeupCardCount: Math.floor(this.safeSum(dailyReports.map(r => r.makeupCardCount))),
+      weekendOvertimeHours: this.safeSum(dailyReports.map(r => r.weekendOvertimeHours)),
+      legalHolidayOvertimeHours: this.safeSum(dailyReports.map(r => r.legalHolidayOvertimeHours)),
       
       // 补贴信息（暂时为0，需要后续完善）
       businessTripNightAllowance: 0,
@@ -947,7 +966,7 @@ export class ReportsService {
       calculationSnapshot: {
         dailyReportCount: dailyReports.length,
         calculationDate: new Date(),
-        dailyReportIds: dailyReports.map(r => r.id)
+        dailyReportIds: dailyReports.map(r => r.id).filter(id => id !== null && id !== undefined)
       }
     };
     
