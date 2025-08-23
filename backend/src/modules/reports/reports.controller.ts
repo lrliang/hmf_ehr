@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { QueryDailyReportDto, TriggerCalculationDto, CalculateReportsDto } from './dto';
@@ -279,8 +279,14 @@ export class ReportsController {
     description: '获取成功',
   })
   @ApiResponse({ status: 404, description: '月报不存在' })
-  async getMonthlyReportDetail(@Query('id') id: number) {
-    return await this.reportsService.getMonthlyReportById(id);
+  async getMonthlyReportDetail(@Param('id') id: number) {
+    // Validate that id is a valid number
+    const reportId = parseInt(id.toString(), 10);
+    if (isNaN(reportId)) {
+      throw new Error('Invalid report ID');
+    }
+    
+    return await this.reportsService.getMonthlyReportById(reportId);
   }
 
   @Post('monthly-reports/:id/confirm')
@@ -295,9 +301,15 @@ export class ReportsController {
   @ApiResponse({ status: 404, description: '月报不存在' })
   @ApiResponse({ status: 400, description: '月报状态不允许确认' })
   async confirmMonthlyReport(
-    @Query('id') id: number,
+    @Param('id') id: number,
     @Body() body: { remark?: string }
   ) {
-    return await this.reportsService.confirmMonthlyReport(id, body.remark);
+    // Validate that id is a valid number
+    const reportId = parseInt(id.toString(), 10);
+    if (isNaN(reportId)) {
+      throw new Error('Invalid report ID');
+    }
+    
+    return await this.reportsService.confirmMonthlyReport(reportId, body.remark);
   }
 }
