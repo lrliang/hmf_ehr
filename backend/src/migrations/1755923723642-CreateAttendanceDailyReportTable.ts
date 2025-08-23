@@ -61,6 +61,107 @@ export class CreateAttendanceDailyReportTable1755923723642 implements MigrationI
                     isNullable: true,
                     comment: "一级部门"
                 },
+                // 打卡时间信息
+                {
+                    name: "firstCheckIn",
+                    type: "timestamp",
+                    isNullable: true,
+                    comment: "当天第一次打卡时间"
+                },
+                {
+                    name: "lastCheckOut",
+                    type: "timestamp",
+                    isNullable: true,
+                    comment: "当天最后一次打卡时间"
+                },
+                {
+                    name: "dailyAttendanceStatus",
+                    type: "varchar",
+                    length: "50",
+                    isNullable: true,
+                    comment: "当天出勤状态：正常、迟到、早退、缺勤等"
+                },
+                // 假期和节假日
+                {
+                    name: "legalHolidayDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "法定假日天数"
+                },
+                {
+                    name: "makeupCardCount",
+                    type: "integer",
+                    default: 0,
+                    comment: "补卡次数"
+                },
+                // 各种假期天数
+                {
+                    name: "annualLeaveDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "年假（天）"
+                },
+                {
+                    name: "personalLeaveDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "事假（天）"
+                },
+                {
+                    name: "sickLeaveDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "病假（天）"
+                },
+                {
+                    name: "bereavementLeaveDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "丧假（天）"
+                },
+                {
+                    name: "childcareLeaveDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "育儿假（天）"
+                },
+                {
+                    name: "maternityLeaveWorkingDays",
+                    type: "decimal",
+                    precision: 3,
+                    scale: 1,
+                    default: 0,
+                    comment: "产假工作日（天）"
+                },
+                // 加班时间统计
+                {
+                    name: "weekendOvertimeHours",
+                    type: "decimal",
+                    precision: 5,
+                    scale: 2,
+                    default: 0,
+                    comment: "公休日加班（小时）"
+                },
+                {
+                    name: "legalHolidayOvertimeHours",
+                    type: "decimal",
+                    precision: 5,
+                    scale: 2,
+                    default: 0,
+                    comment: "法定假日加班（小时）"
+                },
                 {
                     name: "lateMinutes",
                     type: "integer",

@@ -16,11 +16,37 @@ export interface CalculateReportOptions {
 export interface DailyReportCalculationResult {
   employeeId: number;
   reportDate: Date;
+  
+  // 打卡时间信息
+  firstCheckIn?: Date;
+  lastCheckOut?: Date;
+  dailyAttendanceStatus?: string;
+  
+  // 假期和节假日
+  legalHolidayDays: number;
+  makeupCardCount: number;
+  
+  // 各种假期天数
+  annualLeaveDays: number;
+  personalLeaveDays: number;
+  sickLeaveDays: number;
+  bereavementLeaveDays: number;
+  childcareLeaveDays: number;
+  maternityLeaveWorkingDays: number;
+  
+  // 加班时间统计
+  weekendOvertimeHours: number;
+  legalHolidayOvertimeHours: number;
+  
+  // 其他统计字段
   lateMinutes: number;
   overtimeHours: number;
   earlyLeaveMinutes: number;
   actualWorkingHours: number;
   businessTripHours: number;
+  paternityLeaveWorkingDays: number;
+  
+  // 状态信息
   isAbsent: boolean;
   calculationStatus: CalculationStatus;
   calculationMessage?: string;
@@ -95,11 +121,37 @@ export class ReportsService {
             await this.saveDailyReport(employee, {
               employeeId: employee.id,
               reportDate: new Date(currentDate),
+              
+              // 打卡时间信息 - 失败时设为空
+              firstCheckIn: undefined,
+              lastCheckOut: undefined,
+              dailyAttendanceStatus: '计算失败',
+              
+              // 假期和节假日 - 默认值
+              legalHolidayDays: 0,
+              makeupCardCount: 0,
+              
+              // 各种假期天数 - 默认值
+              annualLeaveDays: 0,
+              personalLeaveDays: 0,
+              sickLeaveDays: 0,
+              bereavementLeaveDays: 0,
+              childcareLeaveDays: 0,
+              maternityLeaveWorkingDays: 0,
+              
+              // 加班时间统计 - 默认值
+              weekendOvertimeHours: 0,
+              legalHolidayOvertimeHours: 0,
+              
+              // 其他统计字段 - 默认值
               lateMinutes: 0,
               overtimeHours: 0,
               earlyLeaveMinutes: 0,
               actualWorkingHours: 0,
               businessTripHours: 0,
+              paternityLeaveWorkingDays: 0,
+              
+              // 状态信息
               isAbsent: true,
               calculationStatus: CalculationStatus.FAILED,
               calculationMessage: error.message,
@@ -168,11 +220,37 @@ export class ReportsService {
       return {
         employeeId,
         reportDate,
+        
+        // 打卡时间信息 - 失败时设为空
+        firstCheckIn: undefined,
+        lastCheckOut: undefined,
+        dailyAttendanceStatus: '计算失败',
+        
+        // 假期和节假日 - 默认值
+        legalHolidayDays: 0,
+        makeupCardCount: 0,
+        
+        // 各种假期天数 - 默认值
+        annualLeaveDays: 0,
+        personalLeaveDays: 0,
+        sickLeaveDays: 0,
+        bereavementLeaveDays: 0,
+        childcareLeaveDays: 0,
+        maternityLeaveWorkingDays: 0,
+        
+        // 加班时间统计 - 默认值
+        weekendOvertimeHours: 0,
+        legalHolidayOvertimeHours: 0,
+        
+        // 其他统计字段 - 默认值
         lateMinutes: 0,
         overtimeHours: 0,
         earlyLeaveMinutes: 0,
         actualWorkingHours: 0,
         businessTripHours: 0,
+        paternityLeaveWorkingDays: 0,
+        
+        // 状态信息
         isAbsent: true,
         calculationStatus: CalculationStatus.FAILED,
         calculationMessage: error.message,
@@ -191,11 +269,37 @@ export class ReportsService {
     const result: DailyReportCalculationResult = {
       employeeId,
       reportDate,
+      
+      // 打卡时间信息 - 待计算
+      firstCheckIn: undefined,
+      lastCheckOut: undefined,
+      dailyAttendanceStatus: undefined,
+      
+      // 假期和节假日 - 默认值
+      legalHolidayDays: 0,
+      makeupCardCount: 0,
+      
+      // 各种假期天数 - 默认值（暂时为0，需要后续与请假系统集成）
+      annualLeaveDays: 0,
+      personalLeaveDays: 0,
+      sickLeaveDays: 0,
+      bereavementLeaveDays: 0,
+      childcareLeaveDays: 0,
+      maternityLeaveWorkingDays: 0,
+      
+      // 加班时间统计
+      weekendOvertimeHours: 0,
+      legalHolidayOvertimeHours: 0,
+      
+      // 其他统计字段
       lateMinutes: 0,
       overtimeHours: 0,
       earlyLeaveMinutes: 0,
       actualWorkingHours: 0,
       businessTripHours: 0,
+      paternityLeaveWorkingDays: 0,
+      
+      // 状态信息
       isAbsent: false,
       calculationStatus: CalculationStatus.SUCCESS,
     };
@@ -209,7 +313,64 @@ export class ReportsService {
     // 分离上班打卡和下班打卡
     const checkInRecords = records.filter(r => r.attendanceType === AttendanceType.CHECK_IN);
     const checkOutRecords = records.filter(r => r.attendanceType === AttendanceType.CHECK_OUT);
+    const allRecordsWithTime = records.filter(r => r.checkTime);
     
+    // ============= 计算打卡时间信息 =============
+    if (allRecordsWithTime.length > 0) {
+      // 首打卡时间（最早的打卡记录）
+      result.firstCheckIn = allRecordsWithTime
+        .sort((a, b) => new Date(a.checkTime!).getTime() - new Date(b.checkTime!).getTime())[0]?.checkTime;
+      
+      // 末打卡时间（最晚的打卡记录）
+      result.lastCheckOut = allRecordsWithTime
+        .sort((a, b) => new Date(b.checkTime!).getTime() - new Date(a.checkTime!).getTime())[0]?.checkTime;
+    }
+    
+    // 日出勤状态判断
+    result.dailyAttendanceStatus = this.calculateDailyAttendanceStatus(records);
+    
+    // ============= 计算节假日和补卡信息 =============
+    // 法定假日判断（基于日期，需要后续完善节假日判断逻辑）
+    result.legalHolidayDays = this.isLegalHoliday(reportDate) ? 1 : 0;
+    
+    // 补卡次数（手动补签的记录数量）
+    result.makeupCardCount = records.filter(r => r.isManual).length;
+    
+    // ============= 计算各种假期天数 =============
+    // TODO: 需要与请假系统集成，目前设为0
+    // 这些字段需要从leave模块获取数据
+    result.annualLeaveDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'annual');
+    result.personalLeaveDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'personal');
+    result.sickLeaveDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'sick');
+    result.bereavementLeaveDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'bereavement');
+    result.childcareLeaveDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'childcare');
+    result.maternityLeaveWorkingDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'maternity');
+    
+    // ============= 计算加班时间统计 =============
+    const overtimeRecords = records.filter(r => r.result === AttendanceResult.OVERTIME);
+    
+    // 区分公休日加班和法定假日加班
+    const isWeekend = this.isWeekend(reportDate);
+    const isLegalHoliday = this.isLegalHoliday(reportDate);
+    
+    if (isLegalHoliday) {
+      // 法定假日加班
+      result.legalHolidayOvertimeHours = overtimeRecords.reduce((total, record) => {
+        return total + this.calculateOvertimeHours(record);
+      }, 0);
+    } else if (isWeekend) {
+      // 公休日加班
+      result.weekendOvertimeHours = overtimeRecords.reduce((total, record) => {
+        return total + this.calculateOvertimeHours(record);
+      }, 0);
+    } else {
+      // 工作日加班
+      result.overtimeHours = overtimeRecords.reduce((total, record) => {
+        return total + this.calculateOvertimeHours(record);
+      }, 0);
+    }
+    
+    // ============= 计算其他统计字段 =============
     // 计算迟到时长
     const lateRecords = checkInRecords.filter(r => r.result === AttendanceResult.LATE);
     result.lateMinutes = lateRecords.reduce((total, record) => {
@@ -222,17 +383,14 @@ export class ReportsService {
       return total + this.calculateEarlyLeaveMinutes(record);
     }, 0);
 
-    // 计算加班时长
-    const overtimeRecords = records.filter(r => r.result === AttendanceResult.OVERTIME);
-    result.overtimeHours = overtimeRecords.reduce((total, record) => {
-      return total + this.calculateOvertimeHours(record);
-    }, 0);
-
     // 计算实际工作时长
     result.actualWorkingHours = this.calculateActualWorkingHours(checkInRecords, checkOutRecords);
 
     // 计算公出时长（基于备注或特殊标记）
     result.businessTripHours = this.calculateBusinessTripHours(records);
+
+    // 陪产假工作日天数（暂时设为0，需要与请假系统集成）
+    result.paternityLeaveWorkingDays = 0; // await this.getLeaveHours(employeeId, reportDate, 'paternity');
 
     // 检查缺勤状态
     const absentRecords = records.filter(r => r.result === AttendanceResult.ABSENT);
@@ -349,6 +507,66 @@ export class ReportsService {
   }
 
   /**
+   * 计算日出勤状态
+   */
+  private calculateDailyAttendanceStatus(records: AttendanceRecord[]): string {
+    if (!records || records.length === 0) {
+      return '缺勤';
+    }
+
+    const hasLate = records.some(r => r.result === AttendanceResult.LATE);
+    const hasEarlyLeave = records.some(r => r.result === AttendanceResult.EARLY_LEAVE);
+    const hasAbsent = records.some(r => r.result === AttendanceResult.ABSENT);
+    const hasOvertime = records.some(r => r.result === AttendanceResult.OVERTIME);
+
+    if (hasAbsent) {
+      return '缺勤';
+    } else if (hasLate && hasEarlyLeave) {
+      return '迟到早退';
+    } else if (hasLate) {
+      return '迟到';
+    } else if (hasEarlyLeave) {
+      return '早退';
+    } else if (hasOvertime) {
+      return '加班';
+    } else {
+      return '正常';
+    }
+  }
+
+  /**
+   * 判断是否为周末
+   */
+  private isWeekend(date: Date): boolean {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // 0为周日，6为周六
+  }
+
+  /**
+   * 判断是否为法定假日
+   * TODO: 需要完善法定假日数据库或配置
+   */
+  private isLegalHoliday(date: Date): boolean {
+    // 简单的法定假日判断逻辑，后续需要完善
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    // 元旦
+    if (month === 1 && day === 1) return true;
+    
+    // 劳动节
+    if (month === 5 && (day >= 1 && day <= 3)) return true;
+    
+    // 国庆节
+    if (month === 10 && (day >= 1 && day <= 7)) return true;
+    
+    // TODO: 添加更多法定假日判断，包括农历节日（春节、清明、端午、中秋等）
+    // 建议后续从数据库或配置文件中读取法定假日数据
+    
+    return false;
+  }
+
+  /**
    * 保存日报数据
    */
   private async saveDailyReport(
@@ -372,16 +590,41 @@ export class ReportsService {
       nickname: employee.name, // 暂时使用name作为nickname
       companyEmail: employee.email,
       primaryDepartment: '未分配', // 需要根据实际部门信息补充
+      
+      // 打卡时间信息
+      firstCheckIn: calculationResult.firstCheckIn,
+      lastCheckOut: calculationResult.lastCheckOut,
+      dailyAttendanceStatus: calculationResult.dailyAttendanceStatus,
+      
+      // 假期和节假日
+      legalHolidayDays: calculationResult.legalHolidayDays,
+      makeupCardCount: calculationResult.makeupCardCount,
+      
+      // 各种假期天数
+      annualLeaveDays: calculationResult.annualLeaveDays,
+      personalLeaveDays: calculationResult.personalLeaveDays,
+      sickLeaveDays: calculationResult.sickLeaveDays,
+      bereavementLeaveDays: calculationResult.bereavementLeaveDays,
+      childcareLeaveDays: calculationResult.childcareLeaveDays,
+      maternityLeaveWorkingDays: calculationResult.maternityLeaveWorkingDays,
+      
+      // 加班时间统计
+      weekendOvertimeHours: calculationResult.weekendOvertimeHours,
+      legalHolidayOvertimeHours: calculationResult.legalHolidayOvertimeHours,
+      
+      // 其他统计字段
       lateMinutes: calculationResult.lateMinutes,
-      calculationMessage: calculationResult.calculationMessage,
-      calculationStatus: calculationResult.calculationStatus,
-      paternityLeaveWorkingDays: 0, // 需要根据请假记录计算
-      shift: '标准班次', // 需要根据实际班次信息补充
-      businessTripHours: calculationResult.businessTripHours,
-      actualWorkingHours: calculationResult.actualWorkingHours,
       overtimeHours: calculationResult.overtimeHours,
       earlyLeaveMinutes: calculationResult.earlyLeaveMinutes,
+      actualWorkingHours: calculationResult.actualWorkingHours,
+      businessTripHours: calculationResult.businessTripHours,
+      paternityLeaveWorkingDays: calculationResult.paternityLeaveWorkingDays,
+      
+      // 状态和元信息
       isAbsent: calculationResult.isAbsent,
+      calculationMessage: calculationResult.calculationMessage,
+      calculationStatus: calculationResult.calculationStatus,
+      shift: '标准班次', // 需要根据实际班次信息补充
       lastCalculatedAt: new Date(),
     };
 

@@ -47,6 +47,132 @@ export class AttendanceDailyReport extends BaseEntity {
   @Column({ length: 100, nullable: true, comment: '一级部门' })
   primaryDepartment?: string;
 
+  // ============= 打卡时间信息 =============
+  @ApiProperty({ description: '首打卡时间' })
+  @Column({ 
+    type: 'timestamp', 
+    nullable: true, 
+    comment: '当天第一次打卡时间' 
+  })
+  firstCheckIn?: Date;
+
+  @ApiProperty({ description: '末打卡时间' })
+  @Column({ 
+    type: 'timestamp', 
+    nullable: true, 
+    comment: '当天最后一次打卡时间' 
+  })
+  lastCheckOut?: Date;
+
+  @ApiProperty({ description: '日出勤状态' })
+  @Column({ 
+    length: 50, 
+    nullable: true, 
+    comment: '当天出勤状态：正常、迟到、早退、缺勤等' 
+  })
+  dailyAttendanceStatus?: string;
+
+  // ============= 假期和节假日 =============
+  @ApiProperty({ description: '法定假日天数' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '法定假日天数' 
+  })
+  legalHolidayDays: number;
+
+  @ApiProperty({ description: '补卡次数' })
+  @Column({ 
+    type: 'int', 
+    default: 0, 
+    comment: '补卡次数' 
+  })
+  makeupCardCount: number;
+
+  // ============= 各种假期天数 =============
+  @ApiProperty({ description: '年假（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '年假（天）' 
+  })
+  annualLeaveDays: number;
+
+  @ApiProperty({ description: '事假（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '事假（天）' 
+  })
+  personalLeaveDays: number;
+
+  @ApiProperty({ description: '病假（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '病假（天）' 
+  })
+  sickLeaveDays: number;
+
+  @ApiProperty({ description: '丧假（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '丧假（天）' 
+  })
+  bereavementLeaveDays: number;
+
+  @ApiProperty({ description: '育儿假（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '育儿假（天）' 
+  })
+  childcareLeaveDays: number;
+
+  @ApiProperty({ description: '产假工作日（天）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 3, 
+    scale: 1, 
+    default: 0, 
+    comment: '产假工作日（天）' 
+  })
+  maternityLeaveWorkingDays: number;
+
+  // ============= 加班时间统计 =============
+  @ApiProperty({ description: '公休日加班（小时）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 5, 
+    scale: 2, 
+    default: 0, 
+    comment: '公休日加班（小时）' 
+  })
+  weekendOvertimeHours: number;
+
+  @ApiProperty({ description: '法定假日加班（小时）' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 5, 
+    scale: 2, 
+    default: 0, 
+    comment: '法定假日加班（小时）' 
+  })
+  legalHolidayOvertimeHours: number;
+
   @ApiProperty({ description: '迟到时长（分钟）' })
   @Column({ 
     type: 'int', 
