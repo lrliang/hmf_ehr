@@ -15,6 +15,7 @@ import {
   RESULT_MAPPING,
   TYPE_MAPPING,
 } from './dto';
+import { ReportsService } from '../reports/reports.service';
 
 @Injectable()
 export class AttendanceService {
@@ -23,8 +24,8 @@ export class AttendanceService {
     private readonly attendanceRecordRepository: Repository<AttendanceRecord>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-    @Inject(forwardRef(() => require('../reports/reports.service').ReportsService))
-    private readonly reportsService?: any, // 使用any避免循环依赖的类型问题
+    @Inject(forwardRef(() => ReportsService))
+    private readonly reportsService?: ReportsService,
   ) {}
 
   /**

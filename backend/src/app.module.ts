@@ -26,6 +26,9 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { PositionsModule } from './modules/positions/positions.module';
 
+// 显式导入实体（解决循环依赖问题）
+import { AttendanceDailyReport } from './modules/reports/entities/attendance-daily-report.entity';
+
 // 共享模块
 import { SharedModule } from './shared/shared.module';
 
@@ -49,7 +52,7 @@ import { SharedModule } from './shared/shared.module';
         password: configService.get('database.password'),
         database: configService.get('database.database'),
         schema: configService.get('database.schema'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [__dirname + '/**/*.entity{.ts,.js}', AttendanceDailyReport],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: configService.get('database.synchronize'),
         logging: configService.get('database.logging'),
@@ -98,11 +101,11 @@ import { SharedModule } from './shared/shared.module';
     AuthModule,
     UsersModule,
     EmployeesModule,
+    ReportsModule,  // 将ReportsModule移到AttendanceModule之前
     AttendanceModule,
     LeaveModule,
     GoalsModule,
     SalaryModule,
-    ReportsModule,
     StoresModule,
     PositionsModule,
   ],
